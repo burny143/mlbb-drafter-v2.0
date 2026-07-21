@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Counter Pick — MLBB Draft Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0A0D14;
+    --bg-panel: #12161F;
+    --bg-panel-alt: #171C27;
+    --border: #232938;
+    --border-soft: #1B212E;
+    --gold: #E7B341;
+    --gold-dim: #8A6C2C;
+    --cyan: #46C2D9;
+    --green: #34D399;
+    --red: #F26D6D;
+    --text: #F5F3EE;
+    --text-dim: #94A0B4;
+    --text-faint: #5B6577;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(231,179,65,0.08), transparent 60%),
+      radial-gradient(ellipse 700px 400px at 90% 10%, rgba(70,194,217,0.06), transparent 60%);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding: 32px 20px 80px;
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; }
+
+  header.page-head {
+    text-align: center;
+    margin-bottom: 36px;
+  }
+
+  .eyebrow {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.35em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  h1 {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: clamp(28px, 5vw, 42px);
+    letter-spacing: 0.02em;
+    margin: 0 0 8px;
+  }
+
+  .subhead {
+    color: var(--text-dim);
+    font-size: 14px;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+
+  /* ---------- Draft bar ---------- */
+  .draft-bar {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 20px 22px;
+    margin-bottom: 20px;
+    position: relative;
+  }
+
+  .draft-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    text-align: center;
+    margin-bottom: 18px;
+  }
+
+  .slot-row {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 108px;
+    position: relative;
+  }
+
+  .hex {
+    width: 76px;
+    height: 66px;
+    clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+    background: var(--bg-panel-alt);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    color: var(--text-faint);
+    cursor: pointer;
+    transition: box-shadow 0.2s, background 0.2s, color 0.2s, transform 0.15s;
+  }
+
+  .hex:hover { transform: translateY(-2px); }
+
+  .slot.filled .hex {
+    background: linear-gradient(160deg, #241c0c, #171310);
+    color: var(--gold);
+    box-shadow: 0 0 0 1px var(--gold-dim), 0 0 18px rgba(231,179,65,0.25);
+  }
+
+  .slot-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.1em;
+  }
+
+  .slot-name {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: center;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .slot-clear {
+    position: absolute;
+    top: -4px;
+    right: 10px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    color: var(--text-faint);
+    font-size: 10px;
+    line-height: 14px;
+    text-align: center;
+    cursor: pointer;
+    display: none;
+  }
+
+  .slot.filled .slot-clear { display: block; }
+  .slot-clear:hover { color: var(--red); border-color: var(--red); }
+
+  /* ---------- Autocomplete ---------- */
+  .search-pop {
+    position: absolute;
+    top: 100%;
+    margin-top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 220px;
+    background: var(--bg-panel-alt);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+    z-index: 30;
+    overflow: hidden;
+    display: none;
+  }
+
+  .search-pop.open { display: block; }
+
+  .search-pop input {
+    width: 100%;
+    background: var(--bg-panel);
+    border: none;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    padding: 10px 12px;
+    outline: none;
+  }
+
+  .search-pop input:focus { box-shadow: inset 0 -1px 0 var(--cyan); }
+
+  .search-results { max-height: 220px; overflow-y: auto; }
+
+  .search-item {
+    padding: 9px 12px;
+    font-size: 13px;
+    color: var(--text-dim);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .search-item:hover, .search-item.active {
+    background: rgba(231,179,65,0.1);
+    color: var(--text);
+  }
+
+  .search-item .mini-hex {
+    width: 20px; height: 18px;
+    clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; font-weight: 700; color: var(--text-faint);
+    font-family: 'Rajdhani', sans-serif;
+  }
+
+  .search-empty {
+    padding: 14px 12px;
+    font-size: 12px;
+    color: var(--text-faint);
+    text-align: center;
+  }
+
+  /* ---------- Mode toggle ---------- */
+  .mode-row {
+    display: flex;
+    justify-content: center;
+    margin: 22px 0 8px;
+  }
+
+  .segmented {
+    display: inline-flex;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px;
+    gap: 2px;
+  }
+
+  .segmented button {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 7px 18px;
+    border-radius: 999px;
+    border: none;
+    background: transparent;
+    color: var(--text-faint);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .segmented button.active {
+    background: var(--gold);
+    color: #171310;
+  }
+
+  /* ---------- Results ---------- */
+  .status-msg {
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 13px;
+    padding: 40px 20px;
+  }
+
+  .results-grid {
+    display: grid;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .result-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: 40px 1fr auto;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .rank {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text-faint);
+    text-align: center;
+  }
+
+  .result-card:nth-child(1) .rank { color: var(--gold); }
+
+  .result-main { min-width: 0; }
+
+  .result-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    margin-bottom: 6px;
+  }
+
+  .breakdown {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: var(--bg-panel-alt);
+    border: 1px solid var(--border-soft);
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  .chip b { font-weight: 700; }
+  .chip.pos b { color: var(--green); }
+  .chip.neg b { color: var(--red); }
+  .chip.neu b { color: var(--text-dim); }
+
+  .agg-score {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 22px;
+    text-align: right;
+    min-width: 64px;
+  }
+
+  .agg-score.pos { color: var(--green); }
+  .agg-score.neg { color: var(--red); }
+  .agg-score.neu { color: var(--text-dim); }
+
+  .agg-label {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    text-align: right;
+    margin-top: 2px;
+  }
+
+  footer {
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 11px;
+    margin-top: 50px;
+    letter-spacing: 0.03em;
+  }
+
+  @media (max-width: 560px) {
+    .slot { width: 84px; }
+    .hex { width: 62px; height: 54px; font-size: 16px; }
+    .search-pop { width: 180px; }
+    .result-card { grid-template-columns: 28px 1fr; }
+    .agg-score { grid-column: 2; text-align: left; margin-top: 4px; }
+    .agg-label { text-align: left; }
+  }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page-head">
+    <div class="eyebrow">Land of Dawn / Draft Tool</div>
+    <h1>Counter Pick</h1>
+    <p class="subhead">Fill in the enemy draft and see which heroes counter them hardest, ranked and broken down matchup by matchup.</p>
+  </header>
+
+  <div class="draft-bar">
+    <div class="draft-label">Enemy Draft</div>
+    <div class="slot-row" id="slotRow"><!-- slots injected by JS --></div>
+  </div>
+
+  <div class="mode-row">
+    <div class="segmented">
+      <button id="modeSum" class="active">Total</button>
+      <button id="modeAvg">Average</button>
+    </div>
+  </div>
+
+  <div id="resultsArea">
+    <div class="status-msg" id="statusMsg">Pick at least one enemy hero above to see counters.</div>
+    <div class="results-grid" id="resultsGrid"></div>
+  </div>
+
+  <footer>Scores from precomputed counter_scores. Read-only anon access.</footer>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+// ---------------------------------------------------------------------------
+// Config — fill in your project's URL and anon (public) key. Never put the
+// service-role key here; this file is public once deployed to GitHub Pages.
+// ---------------------------------------------------------------------------
+const SUPABASE_URL = 'https://YOUR-PROJECT-REF.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR-ANON-PUBLIC-KEY';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const NUM_SLOTS = 5;
+const TOP_N = 10;
+
+let heroes = [];              // [{name}, ...]
+let scoreMap = new Map();     // key `${attacker}||${defender}` -> score
+let slots = new Array(NUM_SLOTS).fill(null);
+let mode = 'sum';             // 'sum' | 'avg'
+
+const slotRow = document.getElementById('slotRow');
+const statusMsg = document.getElementById('statusMsg');
+const resultsGrid = document.getElementById('resultsGrid');
+const modeSumBtn = document.getElementById('modeSum');
+const modeAvgBtn = document.getElementById('modeAvg');
+
+// ---------------------------------------------------------------------------
+// Bootstrapping
+// ---------------------------------------------------------------------------
+async function init() {
+  buildSlots();
+  statusMsg.textContent = 'Loading hero data…';
+
+  try {
+    const [heroesRes, scoresRes] = await Promise.all([
+      supabase.from('heroes').select('name').order('name'),
+      supabase.from('counter_scores').select('attacker, defender, score'),
+    ]);
+
+    if (heroesRes.error) throw heroesRes.error;
+    if (scoresRes.error) throw scoresRes.error;
+
+    heroes = heroesRes.data;
+    scoreMap = new Map(
+      scoresRes.data.map(r => [`${r.attacker}||${r.defender}`, r.score])
+    );
+
+    statusMsg.textContent = 'Pick at least one enemy hero above to see counters.';
+  } catch (err) {
+    statusMsg.textContent = `Couldn't load hero data — ${err.message || err}. Check the Supabase URL/anon key and RLS policies.`;
+    console.error(err);
+  }
+}
+
+function initials(name) {
+  return name.split(/\s+/).map(w => w[0]).join('').slice(0, 3).toUpperCase();
+}
+
+// ---------------------------------------------------------------------------
+// Slot UI
+// ---------------------------------------------------------------------------
+function buildSlots() {
+  slotRow.innerHTML = '';
+  for (let i = 0; i < NUM_SLOTS; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'slot';
+    slot.innerHTML = `
+      <div class="slot-clear" data-i="${i}">✕</div>
+      <div class="hex" data-i="${i}">+</div>
+      <div class="slot-num">PICK ${i + 1}</div>
+      <div class="slot-name" data-i="${i}"></div>
+      <div class="search-pop" data-i="${i}">
+        <input type="text" placeholder="Search hero…" data-i="${i}" />
+        <div class="search-results" data-i="${i}"></div>
+      </div>
+    `;
+    slotRow.appendChild(slot);
+  }
+
+  slotRow.querySelectorAll('.hex').forEach(hex => {
+    hex.addEventListener('click', () => openSearch(Number(hex.dataset.i)));
+  });
+  slotRow.querySelectorAll('.slot-clear').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setSlot(Number(btn.dataset.i), null);
+    });
+  });
+  slotRow.querySelectorAll('.search-pop input').forEach(input => {
+    input.addEventListener('input', () => renderSearchResults(Number(input.dataset.i)));
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeAllSearch();
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.slot')) closeAllSearch();
+  });
+}
+
+function openSearch(i) {
+  closeAllSearch();
+  const pop = slotRow.querySelector(`.search-pop[data-i="${i}"]`);
+  pop.classList.add('open');
+  const input = pop.querySelector('input');
+  input.value = '';
+  input.focus();
+  renderSearchResults(i);
+}
+
+function closeAllSearch() {
+  slotRow.querySelectorAll('.search-pop').forEach(p => p.classList.remove('open'));
+}
+
+function renderSearchResults(i) {
+  const pop = slotRow.querySelector(`.search-pop[data-i="${i}"]`);
+  const input = pop.querySelector('input');
+  const container = pop.querySelector('.search-results');
+  const query = input.value.trim().toLowerCase();
+
+  const taken = new Set(slots.filter((s, idx) => s && idx !== i));
+  const matches = heroes
+    .filter(h => !taken.has(h.name))
+    .filter(h => h.name.toLowerCase().includes(query))
+    .slice(0, 8);
+
+  if (matches.length === 0) {
+    container.innerHTML = `<div class="search-empty">No heroes match “${query}”.</div>`;
+    return;
+  }
+
+  container.innerHTML = matches.map(h => `
+    <div class="search-item" data-name="${h.name}">
+      <span class="mini-hex">${initials(h.name)}</span>
+      <span>${h.name}</span>
+    </div>
+  `).join('');
+
+  container.querySelectorAll('.search-item').forEach(item => {
+    item.addEventListener('click', () => {
+      setSlot(i, item.dataset.name);
+      closeAllSearch();
+    });
+  });
+}
+
+function setSlot(i, name) {
+  slots[i] = name;
+  const slotEl = slotRow.children[i];
+  const hex = slotEl.querySelector('.hex');
+  const nameEl = slotEl.querySelector('.slot-name');
+
+  if (name) {
+    slotEl.classList.add('filled');
+    hex.textContent = initials(name);
+    nameEl.textContent = name;
+  } else {
+    slotEl.classList.remove('filled');
+    hex.textContent = '+';
+    nameEl.textContent = '';
+  }
+
+  computeResults();
+}
+
+// ---------------------------------------------------------------------------
+// Scoring
+// ---------------------------------------------------------------------------
+function scoreLabel(v) {
+  if (v > 5) return 'pos';
+  if (v < -5) return 'neg';
+  return 'neu';
+}
+
+function fmt(v) {
+  const r = Math.round(v * 10) / 10;
+  return (r > 0 ? '+' : '') + r;
+}
+
+function computeResults() {
+  const filled = slots.filter(Boolean);
+  const resultsArea = document.getElementById('resultsArea');
+
+  if (filled.length === 0) {
+    statusMsg.style.display = 'block';
+    statusMsg.textContent = 'Pick at least one enemy hero above to see counters.';
+    resultsGrid.innerHTML = '';
+    return;
+  }
+
+  const excluded = new Set(filled);
+  const candidates = heroes.filter(h => !excluded.has(h.name));
+
+  const scored = candidates.map(h => {
+    const perEnemy = filled.map(enemy => ({
+      enemy,
+      score: scoreMap.get(`${h.name}||${enemy}`) ?? 0,
+    }));
+    const total = perEnemy.reduce((a, b) => a + b.score, 0);
+    const aggregate = mode === 'avg' ? total / perEnemy.length : total;
+    return { name: h.name, aggregate, perEnemy };
+  });
+
+  scored.sort((a, b) => b.aggregate - a.aggregate);
+  const top = scored.slice(0, TOP_N);
+
+  statusMsg.style.display = 'none';
+  resultsGrid.innerHTML = top.map((r, idx) => {
+    const aggClass = scoreLabel(r.aggregate);
+    const chips = r.perEnemy.map(pe => {
+      const cls = scoreLabel(pe.score);
+      return `<span class="chip ${cls}">vs ${pe.enemy}: <b>${fmt(pe.score)}</b></span>`;
+    }).join('');
+
+    return `
+      <div class="result-card">
+        <div class="rank">${idx + 1}</div>
+        <div class="result-main">
+          <div class="result-name">${r.name}</div>
+          <div class="breakdown">${chips}</div>
+        </div>
+        <div>
+          <div class="agg-score ${aggClass}">${fmt(r.aggregate)}</div>
+          <div class="agg-label">${mode === 'avg' ? 'avg score' : 'total score'}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ---------------------------------------------------------------------------
+// Mode toggle
+// ---------------------------------------------------------------------------
+modeSumBtn.addEventListener('click', () => {
+  mode = 'sum';
+  modeSumBtn.classList.add('active');
+  modeAvgBtn.classList.remove('active');
+  computeResults();
+});
+modeAvgBtn.addEventListener('click', () => {
+  mode = 'avg';
+  modeAvgBtn.classList.add('active');
+  modeSumBtn.classList.remove('active');
+  computeResults();
+});
+
+init();
+</script>
+</body>
+</html>
