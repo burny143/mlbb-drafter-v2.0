@@ -1,665 +1,797 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Counter Pick — MLBB Draft Assistant</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Counter Draft — MLBB Pick Assistant</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root {
-    --bg: #0A0D14;
-    --bg-panel: #12161F;
-    --bg-panel-alt: #171C27;
-    --border: #232938;
-    --border-soft: #1B212E;
-    --gold: #E7B341;
-    --gold-dim: #8A6C2C;
-    --cyan: #46C2D9;
-    --green: #34D399;
-    --red: #F26D6D;
-    --text: #F5F3EE;
-    --text-dim: #94A0B4;
-    --text-faint: #5B6577;
+  :root{
+    --bg-void:#0A0D12;
+    --bg-panel:#12161F;
+    --bg-panel-2:#191F2B;
+    --bg-slot:#0F131A;
+    --border:#252E3D;
+    --border-soft:#1D2530;
+    --gold:#D4A94E;
+    --gold-dim:#8A6F35;
+    --jade:#49C08C;
+    --crimson:#E2544F;
+    --fog:#6B7482;
+    --text:#EAEDF2;
+    --text-dim:#8E97A6;
+    --text-faint:#5A6270;
+
+    --role-tank:#4C8FE1;
+    --role-fighter:#E1954C;
+    --role-assassin:#E1508A;
+    --role-mage:#A15FE8;
+    --role-marksman:#D4A94E;
+    --role-support:#49C08C;
   }
 
-  * { box-sizing: border-box; }
-
-  body {
-    margin: 0;
-    background: var(--bg);
-    background-image:
-      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(231,179,65,0.08), transparent 60%),
-      radial-gradient(ellipse 700px 400px at 90% 10%, rgba(70,194,217,0.06), transparent 60%);
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-    min-height: 100vh;
-    padding: 32px 20px 80px;
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(212,169,78,0.07), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 90% 10%, rgba(73,192,140,0.05), transparent 60%),
+      var(--bg-void);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
   }
 
-  .wrap { max-width: 1080px; margin: 0 auto; }
+  ::selection{ background:var(--gold); color:#141922; }
 
-  header.page-head {
-    text-align: center;
-    margin-bottom: 36px;
+  .wrap{
+    max-width:1080px;
+    margin:0 auto;
+    padding:32px 20px 80px;
   }
 
-  .eyebrow {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.35em;
-    color: var(--gold);
-    text-transform: uppercase;
-    margin-bottom: 6px;
+  /* ---------- header ---------- */
+  header{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:24px;
+    margin-bottom:36px;
+    flex-wrap:wrap;
+    border-bottom:1px solid var(--border-soft);
+    padding-bottom:20px;
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.22em;
+    color:var(--gold);
+    text-transform:uppercase;
+    margin:0 0 6px;
+  }
+  h1{
+    font-family:'Rajdhani',sans-serif;
+    font-weight:700;
+    font-size:clamp(28px,5vw,40px);
+    letter-spacing:0.01em;
+    margin:0;
+    line-height:1;
+    text-transform:uppercase;
+  }
+  h1 span{ color:var(--gold); }
+  .sub{
+    font-size:13px;
+    color:var(--text-dim);
+    margin-top:8px;
+    max-width:420px;
   }
 
-  h1 {
-    font-family: 'Rajdhani', sans-serif;
-    font-weight: 700;
-    font-size: clamp(28px, 5vw, 42px);
-    letter-spacing: 0.02em;
-    margin: 0 0 8px;
+  .mode-toggle{
+    display:flex;
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:3px;
+    gap:2px;
+    flex-shrink:0;
+  }
+  .mode-toggle button{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    background:transparent;
+    border:none;
+    color:var(--text-dim);
+    padding:8px 14px;
+    border-radius:6px;
+    cursor:pointer;
+    transition:background .15s,color .15s;
+  }
+  .mode-toggle button.active{
+    background:var(--gold);
+    color:#181206;
+    font-weight:600;
   }
 
-  .subhead {
-    color: var(--text-dim);
-    font-size: 14px;
-    max-width: 520px;
-    margin: 0 auto;
+  /* ---------- draft board ---------- */
+  .board-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--text-faint);
+    margin:0 0 14px;
   }
 
-  /* ---------- Draft bar ---------- */
-  .draft-bar {
-    background: var(--bg-panel);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 28px 20px 22px;
-    margin-bottom: 20px;
-    position: relative;
+  .slots{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:14px;
+    margin-bottom:44px;
   }
 
-  .draft-label {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: var(--text-faint);
-    text-align: center;
-    margin-bottom: 18px;
+  .slot{
+    position:relative;
   }
 
-  .slot-row {
-    display: flex;
-    justify-content: center;
-    gap: 16px;
-    flex-wrap: wrap;
+  .hex{
+    aspect-ratio:1/1.02;
+    background:var(--bg-slot);
+    border:1.5px solid var(--border);
+    clip-path:polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    padding:10px 8px;
+    transition:border-color .15s, background .15s;
+    cursor:pointer;
+  }
+  .hex:hover{ border-color:var(--gold-dim); }
+  .hex.filled{
+    background:var(--bg-panel-2);
+    border-color:var(--role-col,var(--gold));
+    cursor:default;
+  }
+  .hex-slotnum{
+    position:absolute;
+    top:2px;
+    left:50%;
+    transform:translateX(-50%);
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px;
+    color:var(--text-faint);
+    letter-spacing:0.1em;
+  }
+  .hex-plus{
+    font-size:22px;
+    color:var(--text-faint);
+    font-weight:300;
+    line-height:1;
+  }
+  .hex-empty-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px;
+    color:var(--text-faint);
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+  }
+  .hex-name{
+    font-family:'Rajdhani',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    text-align:center;
+    line-height:1.05;
+    color:var(--text);
+    padding:0 4px;
+    word-break:break-word;
+  }
+  .hex-role{
+    font-family:'JetBrains Mono',monospace;
+    font-size:8.5px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--role-col,var(--text-dim));
+  }
+  .hex-clear{
+    position:absolute;
+    bottom:6px;
+    left:50%;
+    transform:translateX(-50%);
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px;
+    color:var(--text-faint);
+    background:none;
+    border:none;
+    cursor:pointer;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+  }
+  .hex-clear:hover{ color:var(--crimson); }
+
+  /* search dropdown */
+  .search-pop{
+    position:absolute;
+    top:calc(100% + 6px);
+    left:50%;
+    transform:translateX(-50%);
+    width:min(240px,80vw);
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    box-shadow:0 16px 40px rgba(0,0,0,0.55);
+    z-index:40;
+    overflow:hidden;
+    display:none;
+  }
+  .search-pop.open{ display:block; }
+  .search-pop input{
+    width:100%;
+    background:var(--bg-panel-2);
+    border:none;
+    border-bottom:1px solid var(--border);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    padding:10px 12px;
+    outline:none;
+  }
+  .search-pop input::placeholder{ color:var(--text-faint); }
+  .search-list{
+    max-height:220px;
+    overflow-y:auto;
+  }
+  .search-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:8px 12px;
+    font-size:13px;
+    cursor:pointer;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .search-item:last-child{ border-bottom:none; }
+  .search-item:hover, .search-item.hi{ background:var(--bg-panel-2); }
+  .search-item .role-chip{
+    font-family:'JetBrains Mono',monospace;
+    font-size:8.5px;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    color:var(--r-col);
+    border:1px solid var(--r-col);
+    border-radius:4px;
+    padding:1px 5px;
+    opacity:0.85;
+  }
+  .search-empty{
+    padding:14px 12px;
+    font-size:12px;
+    color:var(--text-faint);
   }
 
-  .slot {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    width: 108px;
-    position: relative;
+  /* ---------- results ---------- */
+  .results-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom:16px;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .results-title{
+    font-family:'Rajdhani',sans-serif;
+    font-weight:700;
+    font-size:20px;
+    text-transform:uppercase;
+    letter-spacing:0.02em;
+  }
+  .results-count{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--text-faint);
   }
 
-  .hex {
-    width: 76px;
-    height: 66px;
-    clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
-    background: var(--bg-panel-alt);
-    border: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Rajdhani', sans-serif;
-    font-weight: 700;
-    font-size: 20px;
-    color: var(--text-faint);
-    cursor: pointer;
-    transition: box-shadow 0.2s, background 0.2s, color 0.2s, transform 0.15s;
+  .empty-state{
+    border:1px dashed var(--border);
+    border-radius:12px;
+    padding:40px 20px;
+    text-align:center;
+    color:var(--text-faint);
+    font-size:13px;
+    line-height:1.6;
+  }
+  .empty-state strong{ color:var(--text-dim); }
+
+  .result-card{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-left:3px solid var(--border);
+    border-radius:10px;
+    padding:14px 16px;
+    margin-bottom:10px;
+    display:grid;
+    grid-template-columns:36px 1fr auto;
+    gap:14px;
+    align-items:center;
+    transition:border-color .15s, transform .1s;
+  }
+  .result-card:hover{ border-color:var(--border-soft); transform:translateX(2px); }
+
+  .rank{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:600;
+    font-size:15px;
+    color:var(--text-faint);
+    text-align:center;
+  }
+  .rank.top{ color:var(--gold); }
+
+  .rc-main{ min-width:0; }
+  .rc-name-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:8px;
+    flex-wrap:wrap;
+  }
+  .rc-name{
+    font-family:'Rajdhani',sans-serif;
+    font-weight:700;
+    font-size:18px;
+    letter-spacing:0.01em;
+  }
+  .rc-role{
+    font-family:'JetBrains Mono',monospace;
+    font-size:9.5px;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    color:var(--r-col);
+    border:1px solid var(--r-col);
+    border-radius:4px;
+    padding:1px 6px;
+    opacity:0.9;
   }
 
-  .hex:hover { transform: translateY(-2px); }
-
-  .slot.filled .hex {
-    background: linear-gradient(160deg, #241c0c, #171310);
-    color: var(--gold);
-    box-shadow: 0 0 0 1px var(--gold-dim), 0 0 18px rgba(231,179,65,0.25);
+  .breakdown{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .bd-row{
+    display:grid;
+    grid-template-columns:74px 1fr 46px;
+    align-items:center;
+    gap:8px;
+    font-size:11px;
+  }
+  .bd-enemy{
+    font-family:'Inter',sans-serif;
+    color:var(--text-dim);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .bd-track{
+    position:relative;
+    height:6px;
+    background:var(--border-soft);
+    border-radius:3px;
+    overflow:hidden;
+  }
+  .bd-track::after{
+    content:'';
+    position:absolute;
+    left:50%;
+    top:0;
+    bottom:0;
+    width:1px;
+    background:var(--border);
+  }
+  .bd-fill{
+    position:absolute;
+    top:0;
+    bottom:0;
+    border-radius:3px;
+  }
+  .bd-score{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    text-align:right;
+    font-weight:600;
   }
 
-  .slot-num {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    color: var(--text-faint);
-    letter-spacing: 0.1em;
+  .agg-score{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:22px;
+    text-align:right;
+    min-width:66px;
+  }
+  .agg-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px;
+    color:var(--text-faint);
+    text-align:right;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    margin-top:2px;
   }
 
-  .slot-name {
-    font-size: 11px;
-    color: var(--text-dim);
-    text-align: center;
-    max-width: 100px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .pos{ color:var(--jade); }
+  .neg{ color:var(--crimson); }
+  .neu{ color:var(--text-dim); }
+
+  .status-bar{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--text-faint);
+    margin-top:24px;
+    text-align:center;
+  }
+  .status-bar.error{ color:var(--crimson); }
+
+  footer{
+    margin-top:60px;
+    padding-top:20px;
+    border-top:1px solid var(--border-soft);
+    font-size:11px;
+    color:var(--text-faint);
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px;
+    font-family:'JetBrains Mono',monospace;
   }
 
-  .slot-clear {
-    position: absolute;
-    top: -4px;
-    right: 10px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--bg-panel);
-    border: 1px solid var(--border);
-    color: var(--text-faint);
-    font-size: 10px;
-    line-height: 14px;
-    text-align: center;
-    cursor: pointer;
-    display: none;
+  @media (max-width:720px){
+    .slots{ grid-template-columns:repeat(3,1fr); }
+    .result-card{ grid-template-columns:26px 1fr; }
+    .agg-score{ grid-column:2; text-align:left; font-size:26px; margin-top:6px; }
+    .agg-label{ grid-column:2; text-align:left; }
+    .bd-row{ grid-template-columns:64px 1fr 40px; }
+  }
+  @media (max-width:480px){
+    .slots{ grid-template-columns:repeat(2,1fr); }
   }
 
-  .slot.filled .slot-clear { display: block; }
-  .slot-clear:hover { color: var(--red); border-color: var(--red); }
-
-  /* ---------- Autocomplete ---------- */
-  .search-pop {
-    position: absolute;
-    top: 100%;
-    margin-top: 6px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 220px;
-    background: var(--bg-panel-alt);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    box-shadow: 0 12px 32px rgba(0,0,0,0.5);
-    z-index: 30;
-    overflow: hidden;
-    display: none;
+  @media (prefers-reduced-motion:reduce){
+    *{ transition:none !important; }
   }
-
-  .search-pop.open { display: block; }
-
-  .search-pop input {
-    width: 100%;
-    background: var(--bg-panel);
-    border: none;
-    border-bottom: 1px solid var(--border);
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-    font-size: 13px;
-    padding: 10px 12px;
-    outline: none;
-  }
-
-  .search-pop input:focus { box-shadow: inset 0 -1px 0 var(--cyan); }
-
-  .search-results { max-height: 220px; overflow-y: auto; }
-
-  .search-item {
-    padding: 9px 12px;
-    font-size: 13px;
-    color: var(--text-dim);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .search-item:hover, .search-item.active {
-    background: rgba(231,179,65,0.1);
-    color: var(--text);
-  }
-
-  .search-item .mini-hex {
-    width: 20px; height: 18px;
-    clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
-    background: var(--bg);
-    border: 1px solid var(--border);
-    flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 8px; font-weight: 700; color: var(--text-faint);
-    font-family: 'Rajdhani', sans-serif;
-  }
-
-  .search-empty {
-    padding: 14px 12px;
-    font-size: 12px;
-    color: var(--text-faint);
-    text-align: center;
-  }
-
-  /* ---------- Mode toggle ---------- */
-  .mode-row {
-    display: flex;
-    justify-content: center;
-    margin: 22px 0 8px;
-  }
-
-  .segmented {
-    display: inline-flex;
-    background: var(--bg-panel);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 3px;
-    gap: 2px;
-  }
-
-  .segmented button {
-    font-family: 'Rajdhani', sans-serif;
-    font-weight: 600;
-    font-size: 13px;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    padding: 7px 18px;
-    border-radius: 999px;
-    border: none;
-    background: transparent;
-    color: var(--text-faint);
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-  }
-
-  .segmented button.active {
-    background: var(--gold);
-    color: #171310;
-  }
-
-  /* ---------- Results ---------- */
-  .status-msg {
-    text-align: center;
-    color: var(--text-faint);
-    font-size: 13px;
-    padding: 40px 20px;
-  }
-
-  .results-grid {
-    display: grid;
-    gap: 10px;
-    margin-top: 18px;
-  }
-
-  .result-card {
-    background: var(--bg-panel);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px 16px;
-    display: grid;
-    grid-template-columns: 40px 1fr auto;
-    align-items: center;
-    gap: 14px;
-  }
-
-  .rank {
-    font-family: 'JetBrains Mono', monospace;
-    font-weight: 700;
-    font-size: 15px;
-    color: var(--text-faint);
-    text-align: center;
-  }
-
-  .result-card:nth-child(1) .rank { color: var(--gold); }
-
-  .result-main { min-width: 0; }
-
-  .result-name {
-    font-family: 'Rajdhani', sans-serif;
-    font-weight: 700;
-    font-size: 17px;
-    margin-bottom: 6px;
-  }
-
-  .breakdown {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .chip {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    padding: 3px 8px;
-    border-radius: 6px;
-    background: var(--bg-panel-alt);
-    border: 1px solid var(--border-soft);
-    color: var(--text-dim);
-    white-space: nowrap;
-  }
-
-  .chip b { font-weight: 700; }
-  .chip.pos b { color: var(--green); }
-  .chip.neg b { color: var(--red); }
-  .chip.neu b { color: var(--text-dim); }
-
-  .agg-score {
-    font-family: 'JetBrains Mono', monospace;
-    font-weight: 700;
-    font-size: 22px;
-    text-align: right;
-    min-width: 64px;
-  }
-
-  .agg-score.pos { color: var(--green); }
-  .agg-score.neg { color: var(--red); }
-  .agg-score.neu { color: var(--text-dim); }
-
-  .agg-label {
-    display: block;
-    font-family: 'Inter', sans-serif;
-    font-weight: 400;
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-faint);
-    text-align: right;
-    margin-top: 2px;
-  }
-
-  footer {
-    text-align: center;
-    color: var(--text-faint);
-    font-size: 11px;
-    margin-top: 50px;
-    letter-spacing: 0.03em;
-  }
-
-  @media (max-width: 560px) {
-    .slot { width: 84px; }
-    .hex { width: 62px; height: 54px; font-size: 16px; }
-    .search-pop { width: 180px; }
-    .result-card { grid-template-columns: 28px 1fr; }
-    .agg-score { grid-column: 2; text-align: left; margin-top: 4px; }
-    .agg-label { text-align: left; }
-  }
-
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <header class="page-head">
-    <div class="eyebrow">Land of Dawn / Draft Tool</div>
-    <h1>Counter Pick</h1>
-    <p class="subhead">Fill in the enemy draft and see which heroes counter them hardest, ranked and broken down matchup by matchup.</p>
-  </header>
-
-  <div class="draft-bar">
-    <div class="draft-label">Enemy Draft</div>
-    <div class="slot-row" id="slotRow"><!-- slots injected by JS --></div>
-  </div>
-
-  <div class="mode-row">
-    <div class="segmented">
-      <button id="modeSum" class="active">Total</button>
+  <header>
+    <div>
+      <p class="eyebrow">Draft phase / read-only</p>
+      <h1>Counter <span>Draft</span></h1>
+      <p class="sub">Lock in the enemy picks. See who answers them best, ranked, before your turn.</p>
+    </div>
+    <div class="mode-toggle" role="group" aria-label="Aggregate mode">
+      <button id="modeSum" class="active">Sum</button>
       <button id="modeAvg">Average</button>
     </div>
+  </header>
+
+  <p class="board-label">Enemy draft — tap a slot to search</p>
+  <div class="slots" id="slots"></div>
+
+  <div class="results-head">
+    <div class="results-title">Best answers</div>
+    <div class="results-count" id="resultsCount"></div>
   </div>
 
   <div id="resultsArea">
-    <div class="status-msg" id="statusMsg">Pick at least one enemy hero above to see counters.</div>
-    <div class="results-grid" id="resultsGrid"></div>
+    <div class="empty-state">Fill at least one enemy slot above.<br><strong>Top 10 counters</strong> will rank here.</div>
   </div>
 
-  <footer>Scores from precomputed counter_scores. Read-only anon access.</footer>
+  <div class="status-bar" id="status">connecting…</div>
+
+  <footer>
+    <span>133 heroes · counter_scores (read-only)</span>
+    <span id="rowCount">—</span>
+  </footer>
+
 </div>
 
-<script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+<script>
+// ============================================================
+// CONFIG — fill in your project's public values
+// ============================================================
+const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR-ANON-PUBLIC-KEY";
 
-// ---------------------------------------------------------------------------
-// Config — fill in your project's URL and anon (public) key. Never put the
-// service-role key here; this file is public once deployed to GitHub Pages.
-// ---------------------------------------------------------------------------
-const SUPABASE_URL = 'https://YOUR-PROJECT-REF.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR-ANON-PUBLIC-KEY';
+const ROLE_COLORS = {
+  "Tank":"var(--role-tank)",
+  "Fighter":"var(--role-fighter)",
+  "Assassin":"var(--role-assassin)",
+  "Mage":"var(--role-mage)",
+  "Marksman":"var(--role-marksman)",
+  "Support":"var(--role-support)"
+};
+function roleColor(role){ return ROLE_COLORS[role] || "var(--fog)"; }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// ------------------------------------------------------------
+// state
+// ------------------------------------------------------------
+let heroes = [];              // [{name, role, role2}, ...]
+let heroNames = [];
+let scoreMap = new Map();     // "attacker|defender" -> score
+let slots = [null,null,null,null,null];
+let mode = "sum";             // "sum" | "avg"
+let activeSearchSlot = null;
 
-const NUM_SLOTS = 5;
-const TOP_N = 10;
+const statusEl = document.getElementById("status");
+const slotsEl = document.getElementById("slots");
+const resultsArea = document.getElementById("resultsArea");
+const resultsCount = document.getElementById("resultsCount");
+const rowCountEl = document.getElementById("rowCount");
 
-let heroes = [];              // [{name}, ...]
-let scoreMap = new Map();     // key `${attacker}||${defender}` -> score
-let slots = new Array(NUM_SLOTS).fill(null);
-let mode = 'sum';             // 'sum' | 'avg'
+// ------------------------------------------------------------
+// data loading
+// ------------------------------------------------------------
+async function loadData(){
+  try{
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const slotRow = document.getElementById('slotRow');
-const statusMsg = document.getElementById('statusMsg');
-const resultsGrid = document.getElementById('resultsGrid');
-const modeSumBtn = document.getElementById('modeSum');
-const modeAvgBtn = document.getElementById('modeAvg');
+    statusEl.textContent = "loading heroes…";
+    const { data: heroRows, error: heroErr } = await client
+      .from("heroes")
+      .select("name, role, role2")
+      .order("name");
+    if (heroErr) throw heroErr;
+    heroes = heroRows;
+    heroNames = heroes.map(h => h.name);
 
-// ---------------------------------------------------------------------------
-// Bootstrapping
-// ---------------------------------------------------------------------------
-async function init() {
-  buildSlots();
-  statusMsg.textContent = 'Loading hero data…';
+    // 133 heroes × 132 opponents ≈ 17.5k rows. That's roughly 1-2MB of JSON —
+    // small enough to pull once and keep in memory, rather than re-querying
+    // Supabase on every slot change. This keeps the tool snappy while a user
+    // is swapping picks in and out during a live draft, at the cost of one
+    // slightly bigger initial fetch. (If this table grows well past ~50k rows,
+    // switch to `.in('defender', filledNames)` filtered queries instead.)
+    statusEl.textContent = "loading counter scores…";
+    const { data: scoreRows, error: scoreErr, count } = await client
+      .from("counter_scores")
+      .select("attacker, defender, score", { count: "exact" });
+    if (scoreErr) throw scoreErr;
 
-  try {
-    const [heroesRes, scoresRes] = await Promise.all([
-      supabase.from('heroes').select('name').order('name'),
-      supabase.from('counter_scores').select('attacker, defender, score'),
-    ]);
+    scoreMap.clear();
+    for (const r of scoreRows){
+      scoreMap.set(r.attacker + "|" + r.defender, r.score);
+    }
 
-    if (heroesRes.error) throw heroesRes.error;
-    if (scoresRes.error) throw scoresRes.error;
+    rowCountEl.textContent = heroes.length + " heroes · " + scoreRows.length + " matchups loaded";
+    statusEl.textContent = "ready";
+    setTimeout(()=>{ if(statusEl.textContent==="ready") statusEl.textContent=""; }, 1800);
 
-    heroes = heroesRes.data;
-    scoreMap = new Map(
-      scoresRes.data.map(r => [`${r.attacker}||${r.defender}`, r.score])
-    );
-
-    statusMsg.textContent = 'Pick at least one enemy hero above to see counters.';
-  } catch (err) {
-    statusMsg.textContent = `Couldn't load hero data — ${err.message || err}. Check the Supabase URL/anon key and RLS policies.`;
+    renderSlots();
+    renderResults();
+  } catch(err){
     console.error(err);
+    statusEl.textContent = "Couldn't load data: " + (err.message || err);
+    statusEl.classList.add("error");
   }
 }
 
-function initials(name) {
-  return name.split(/\s+/).map(w => w[0]).join('').slice(0, 3).toUpperCase();
+function heroInfo(name){
+  return heroes.find(h => h.name === name);
 }
 
-// ---------------------------------------------------------------------------
-// Slot UI
-// ---------------------------------------------------------------------------
-function buildSlots() {
-  slotRow.innerHTML = '';
-  for (let i = 0; i < NUM_SLOTS; i++) {
-    const slot = document.createElement('div');
-    slot.className = 'slot';
-    slot.innerHTML = `
-      <div class="slot-clear" data-i="${i}">✕</div>
-      <div class="hex" data-i="${i}">+</div>
-      <div class="slot-num">PICK ${i + 1}</div>
-      <div class="slot-name" data-i="${i}"></div>
-      <div class="search-pop" data-i="${i}">
-        <input type="text" placeholder="Search hero…" data-i="${i}" />
-        <div class="search-results" data-i="${i}"></div>
-      </div>
-    `;
-    slotRow.appendChild(slot);
+// ------------------------------------------------------------
+// slots / search UI
+// ------------------------------------------------------------
+function renderSlots(){
+  slotsEl.innerHTML = "";
+  slots.forEach((name, i) => {
+    const slotDiv = document.createElement("div");
+    slotDiv.className = "slot";
+
+    if (name){
+      const h = heroInfo(name) || {};
+      const col = roleColor(h.role);
+      slotDiv.innerHTML = `
+        <div class="hex filled" style="--role-col:${col}">
+          <span class="hex-slotnum">P${i+1}</span>
+          <div class="hex-name">${escapeHtml(name)}</div>
+          <div class="hex-role" style="--role-col:${col}">${escapeHtml(h.role || "")}</div>
+          <button class="hex-clear" data-clear="${i}">clear</button>
+        </div>`;
+      slotDiv.querySelector(".hex-clear").addEventListener("click", (e)=>{
+        e.stopPropagation();
+        slots[i] = null;
+        renderSlots();
+        renderResults();
+      });
+    } else {
+      slotDiv.innerHTML = `
+        <div class="hex" data-open="${i}">
+          <span class="hex-slotnum">P${i+1}</span>
+          <div class="hex-plus">+</div>
+          <div class="hex-empty-label">Enemy Pick ${i+1}</div>
+        </div>
+        <div class="search-pop" id="pop-${i}">
+          <input type="text" placeholder="Search hero…" data-input="${i}" autocomplete="off">
+          <div class="search-list" data-list="${i}"></div>
+        </div>`;
+      slotDiv.querySelector(".hex").addEventListener("click", ()=> openSearch(i));
+    }
+    slotsEl.appendChild(slotDiv);
+  });
+
+  if (activeSearchSlot !== null && slots[activeSearchSlot] === null){
+    openSearch(activeSearchSlot);
   }
-
-  slotRow.querySelectorAll('.hex').forEach(hex => {
-    hex.addEventListener('click', () => openSearch(Number(hex.dataset.i)));
-  });
-  slotRow.querySelectorAll('.slot-clear').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      setSlot(Number(btn.dataset.i), null);
-    });
-  });
-  slotRow.querySelectorAll('.search-pop input').forEach(input => {
-    input.addEventListener('input', () => renderSearchResults(Number(input.dataset.i)));
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeAllSearch();
-    });
-  });
-
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.slot')) closeAllSearch();
-  });
 }
 
-function openSearch(i) {
-  closeAllSearch();
-  const pop = slotRow.querySelector(`.search-pop[data-i="${i}"]`);
-  pop.classList.add('open');
-  const input = pop.querySelector('input');
-  input.value = '';
-  input.focus();
-  renderSearchResults(i);
+function openSearch(i){
+  document.querySelectorAll(".search-pop.open").forEach(p => p.classList.remove("open"));
+  activeSearchSlot = i;
+  const pop = document.getElementById("pop-" + i);
+  if (!pop) return;
+  pop.classList.add("open");
+  const input = pop.querySelector("input");
+  input.value = "";
+  renderSearchList(i, "");
+  setTimeout(()=> input.focus(), 0);
+
+  input.oninput = () => renderSearchList(i, input.value);
+  input.onkeydown = (e) => {
+    if (e.key === "Escape"){ closeSearch(); }
+  };
 }
 
-function closeAllSearch() {
-  slotRow.querySelectorAll('.search-pop').forEach(p => p.classList.remove('open'));
+function closeSearch(){
+  document.querySelectorAll(".search-pop.open").forEach(p => p.classList.remove("open"));
+  activeSearchSlot = null;
 }
 
-function renderSearchResults(i) {
-  const pop = slotRow.querySelector(`.search-pop[data-i="${i}"]`);
-  const input = pop.querySelector('input');
-  const container = pop.querySelector('.search-results');
-  const query = input.value.trim().toLowerCase();
+function renderSearchList(i, query){
+  const list = document.querySelector(`[data-list="${i}"]`);
+  if (!list) return;
+  const q = query.trim().toLowerCase();
+  const taken = new Set(slots.filter(Boolean));
+  let matches = heroes.filter(h => !taken.has(h.name));
+  if (q) matches = matches.filter(h => h.name.toLowerCase().includes(q));
+  matches = matches.slice(0, 8);
 
-  const taken = new Set(slots.filter((s, idx) => s && idx !== i));
-  const matches = heroes
-    .filter(h => !taken.has(h.name))
-    .filter(h => h.name.toLowerCase().includes(query))
-    .slice(0, 8);
-
-  if (matches.length === 0) {
-    container.innerHTML = `<div class="search-empty">No heroes match “${query}”.</div>`;
+  if (matches.length === 0){
+    list.innerHTML = `<div class="search-empty">No hero matches "${escapeHtml(query)}"</div>`;
     return;
   }
-
-  container.innerHTML = matches.map(h => `
-    <div class="search-item" data-name="${h.name}">
-      <span class="mini-hex">${initials(h.name)}</span>
-      <span>${h.name}</span>
+  list.innerHTML = matches.map(h => `
+    <div class="search-item" data-pick="${escapeHtml(h.name)}" style="--r-col:${roleColor(h.role)}">
+      <span>${escapeHtml(h.name)}</span>
+      <span class="role-chip">${escapeHtml(h.role || "")}</span>
     </div>
-  `).join('');
-
-  container.querySelectorAll('.search-item').forEach(item => {
-    item.addEventListener('click', () => {
-      setSlot(i, item.dataset.name);
-      closeAllSearch();
+  `).join("");
+  list.querySelectorAll("[data-pick]").forEach(el => {
+    el.addEventListener("click", () => {
+      slots[i] = el.getAttribute("data-pick");
+      closeSearch();
+      renderSlots();
+      renderResults();
     });
   });
 }
 
-function setSlot(i, name) {
-  slots[i] = name;
-  const slotEl = slotRow.children[i];
-  const hex = slotEl.querySelector('.hex');
-  const nameEl = slotEl.querySelector('.slot-name');
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".slot")) closeSearch();
+});
 
-  if (name) {
-    slotEl.classList.add('filled');
-    hex.textContent = initials(name);
-    nameEl.textContent = name;
-  } else {
-    slotEl.classList.remove('filled');
-    hex.textContent = '+';
-    nameEl.textContent = '';
-  }
-
-  computeResults();
+// ------------------------------------------------------------
+// mode toggle
+// ------------------------------------------------------------
+document.getElementById("modeSum").addEventListener("click", ()=> setMode("sum"));
+document.getElementById("modeAvg").addEventListener("click", ()=> setMode("avg"));
+function setMode(m){
+  mode = m;
+  document.getElementById("modeSum").classList.toggle("active", m==="sum");
+  document.getElementById("modeAvg").classList.toggle("active", m==="avg");
+  renderResults();
 }
 
-// ---------------------------------------------------------------------------
-// Scoring
-// ---------------------------------------------------------------------------
-function scoreLabel(v) {
-  if (v > 5) return 'pos';
-  if (v < -5) return 'neg';
-  return 'neu';
+// ------------------------------------------------------------
+// scoring / results
+// ------------------------------------------------------------
+const BAR_SCALE = 120; // score magnitude that fills half the bar track
+
+function getScore(attacker, defender){
+  const v = scoreMap.get(attacker + "|" + defender);
+  return typeof v === "number" ? v : 0;
 }
 
-function fmt(v) {
-  const r = Math.round(v * 10) / 10;
-  return (r > 0 ? '+' : '') + r;
-}
-
-function computeResults() {
+function computeResults(){
   const filled = slots.filter(Boolean);
-  const resultsArea = document.getElementById('resultsArea');
+  if (filled.length === 0) return [];
 
-  if (filled.length === 0) {
-    statusMsg.style.display = 'block';
-    statusMsg.textContent = 'Pick at least one enemy hero above to see counters.';
-    resultsGrid.innerHTML = '';
+  const takenSet = new Set(filled);
+  const candidates = heroNames.filter(n => !takenSet.has(n));
+
+  const rows = candidates.map(name => {
+    const breakdown = filled.map(enemy => ({
+      enemy,
+      score: getScore(name, enemy)
+    }));
+    const total = breakdown.reduce((a,b)=>a+b.score, 0);
+    const agg = mode === "avg" ? total / filled.length : total;
+    return { name, agg, breakdown };
+  });
+
+  rows.sort((a,b) => b.agg - a.agg);
+  return rows.slice(0, 10);
+}
+
+function scoreClass(v){
+  if (v > 3) return "pos";
+  if (v < -3) return "neg";
+  return "neu";
+}
+
+function renderResults(){
+  const filled = slots.filter(Boolean);
+  if (filled.length === 0){
+    resultsArea.innerHTML = `<div class="empty-state">Fill at least one enemy slot above.<br><strong>Top 10 counters</strong> will rank here.</div>`;
+    resultsCount.textContent = "";
     return;
   }
 
-  const excluded = new Set(filled);
-  const candidates = heroes.filter(h => !excluded.has(h.name));
+  const results = computeResults();
+  resultsCount.textContent = `vs ${filled.length} pick${filled.length>1?"s":""} · ${mode === "sum" ? "summed" : "averaged"}`;
 
-  const scored = candidates.map(h => {
-    const perEnemy = filled.map(enemy => ({
-      enemy,
-      score: scoreMap.get(`${h.name}||${enemy}`) ?? 0,
-    }));
-    const total = perEnemy.reduce((a, b) => a + b.score, 0);
-    const aggregate = mode === 'avg' ? total / perEnemy.length : total;
-    return { name: h.name, aggregate, perEnemy };
-  });
-
-  scored.sort((a, b) => b.aggregate - a.aggregate);
-  const top = scored.slice(0, TOP_N);
-
-  statusMsg.style.display = 'none';
-  resultsGrid.innerHTML = top.map((r, idx) => {
-    const aggClass = scoreLabel(r.aggregate);
-    const chips = r.perEnemy.map(pe => {
-      const cls = scoreLabel(pe.score);
-      return `<span class="chip ${cls}">vs ${pe.enemy}: <b>${fmt(pe.score)}</b></span>`;
-    }).join('');
+  resultsArea.innerHTML = results.map((r, idx) => {
+    const h = heroInfo(r.name) || {};
+    const col = roleColor(h.role);
+    const bdRows = r.breakdown.map(b => {
+      const pct = Math.max(-50, Math.min(50, (b.score / BAR_SCALE) * 50));
+      const cls = scoreClass(b.score);
+      const barColor = cls === "pos" ? "var(--jade)" : cls === "neg" ? "var(--crimson)" : "var(--fog)";
+      const left = pct >= 0 ? "50%" : (50 + pct) + "%";
+      const width = Math.abs(pct) + "%";
+      return `
+        <div class="bd-row">
+          <div class="bd-enemy">vs ${escapeHtml(b.enemy)}</div>
+          <div class="bd-track">
+            <div class="bd-fill" style="left:${left}; width:${width}; background:${barColor};"></div>
+          </div>
+          <div class="bd-score ${cls}">${b.score > 0 ? "+" : ""}${b.score.toFixed(0)}</div>
+        </div>`;
+    }).join("");
 
     return `
       <div class="result-card">
-        <div class="rank">${idx + 1}</div>
-        <div class="result-main">
-          <div class="result-name">${r.name}</div>
-          <div class="breakdown">${chips}</div>
+        <div class="rank ${idx===0 ? "top" : ""}">${idx+1}</div>
+        <div class="rc-main">
+          <div class="rc-name-row">
+            <span class="rc-name">${escapeHtml(r.name)}</span>
+            <span class="rc-role" style="--r-col:${col}">${escapeHtml(h.role || "")}${h.role2 ? " / " + escapeHtml(h.role2) : ""}</span>
+          </div>
+          <div class="breakdown">${bdRows}</div>
         </div>
         <div>
-          <div class="agg-score ${aggClass}">${fmt(r.aggregate)}</div>
-          <div class="agg-label">${mode === 'avg' ? 'avg score' : 'total score'}</div>
+          <div class="agg-score ${scoreClass(r.agg)}">${r.agg > 0 ? "+" : ""}${r.agg.toFixed(1)}</div>
+          <div class="agg-label">${mode === "sum" ? "total" : "avg"} score</div>
         </div>
-      </div>
-    `;
-  }).join('');
+      </div>`;
+  }).join("");
 }
 
-// ---------------------------------------------------------------------------
-// Mode toggle
-// ---------------------------------------------------------------------------
-modeSumBtn.addEventListener('click', () => {
-  mode = 'sum';
-  modeSumBtn.classList.add('active');
-  modeAvgBtn.classList.remove('active');
-  computeResults();
-});
-modeAvgBtn.addEventListener('click', () => {
-  mode = 'avg';
-  modeAvgBtn.classList.add('active');
-  modeSumBtn.classList.remove('active');
-  computeResults();
-});
+function escapeHtml(s){
+  return String(s ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
+  }[c]));
+}
 
-init();
+// ------------------------------------------------------------
+// boot
+// ------------------------------------------------------------
+loadData();
 </script>
 </body>
 </html>
