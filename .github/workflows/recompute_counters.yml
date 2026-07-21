@@ -1,0 +1,58 @@
+name: Recompute MLBB counter scores
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'data/**'
+      - 'compute_counters.py'
+  workflow_dispatch: {}
+
+jobs:
+  recompute:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f "requirements.txt" ]; then
+            pip install -r requirements.txt
+          else
+            pip install supabase
+          fi
+
+      - name: Pre-flight Diagnostic Check
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          if [ ! -f "compute_counters.py" ]; then
+            echo "ERROR: compute_counters.py is missing from repository root."
+            exit 1
+          fi
+
+          if [ -z "$SUPABASE_URL" ]; then
+            echo "ERROR: Secret SUPABASE_URL is not configured under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+          if [ -z "$SUPABASE_SERVICE_KEY" ]; then
+            echo "ERROR: Secret SUPABASE_SERVICE_KEY is not configured under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+          echo "Pre-flight checks passed successfully."
+
+      - name: Recompute counter scores
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python compute_counters.py
