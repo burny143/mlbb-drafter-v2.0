@@ -1,0 +1,31 @@
+name: Migrate MLBB workbook to Supabase
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mobile_legends_heroes_updated.xlsx'
+      - 'migrate_to_supabase.py'
+      - 'schema.sql'
+  workflow_dispatch: {}   # lets you trigger it manually from the Actions tab
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run migration
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python migrate_to_supabase.py mobile_legends_heroes_updated.xlsx
