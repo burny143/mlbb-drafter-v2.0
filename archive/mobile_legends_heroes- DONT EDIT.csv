@@ -1,0 +1,134 @@
+﻿id,name,role,role2,offense,ability_effects,durability,difficulty,style1,style2,damage_type,range_type,lane1,lane2,power_spike,resource,spike_order
+1,Miya,Marksman,,70,40,10,10,DPS,AoE Damage,Physical,Ranged,Gold Lane,,Late,Mana,5
+2,Balmond,Fighter,,30,20,80,10,Sustain,Execute,Physical,Melee,Jungle,EXP Lane,Mid,None,3
+3,Saber,Assassin,,60,60,20,10,Burst,Targeted CC,Physical,Melee,Jungle,Roaming,Early-Mid,Mana,2
+4,Alice,Mage,,50,70,50,70,Sustain,AoE Damage,Magic,Melee,EXP Lane,Jungle,Late,None,5
+5,Nana,Mage,,60,100,50,10,Poke,Soft CC,Magic,Ranged,Mid Lane,,Mid,Mana,3
+6,Tigreal,Tank,,10,100,80,10,AoE CC,Hard CC,Physical,Melee,Roaming,,Early-Mid,Mana,2
+7,Alucard,Fighter,Assassin,50,10,50,40,Sustain,DPS,Physical,Melee,Jungle,,Mid,None,3
+8,Karina,Assassin,,70,10,50,40,Burst,Execute,Magic,Melee,Jungle,,Early-Mid,Mana,2
+9,Akai,Tank,,30,90,90,30,Hard CC,Shield,Physical,Melee,Roaming,,Early-Mid,Mana,2
+10,Franco,Tank,,10,100,80,20,Targeted CC,Hard CC,Physical,Melee,Roaming,,Early-Mid,Mana,2
+11,Bane,Fighter,Mage,60,40,50,30,Poke,AoE Damage,Mixed,Melee,Jungle,EXP Lane,Mid,Mana,3
+12,Bruno,Marksman,,60,20,20,50,DPS,Burst,Physical,Ranged,Gold Lane,,Late,Mana,5
+13,Clint,Marksman,,70,40,30,70,Burst,Poke,Physical,Ranged,Gold Lane,,Mid-Late,Mana,4
+14,Rafaela,Support,,20,70,60,20,Healing,Soft CC,Magic,Ranged,Roaming,,Early-Mid,Mana,2
+15,Eudora,Mage,,80,80,10,10,Burst,Targeted CC,Magic,Ranged,Mid Lane,,Mid,Mana,3
+16,Zilong,Fighter,Assassin,50,60,20,10,Burst,Mobility,Physical,Melee,EXP Lane,,Mid,Mana,3
+17,Fanny,Assassin,,70,10,60,100,High Mobility,Burst,Physical,Melee,Jungle,,Early,Energy,1
+18,Layla,Marksman,,80,10,10,10,DPS,Poke,Physical,Ranged,Gold Lane,,Late,Mana,5
+19,Minotaur,Tank,Support,10,80,100,40,AoE CC,Healing,Physical,Melee,Roaming,,Mid,None,3
+20,Lolita,Support,Tank,10,90,100,40,Shield,AoE CC,Physical,Melee,Roaming,,Mid,Mana,3
+21,Hayabusa,Assassin,,50,10,40,50,Burst,I-Frame,Physical,Melee,Jungle,,Early-Mid,Energy,2
+22,Freya,Fighter,,50,50,60,50,Shield,DPS,Physical,Melee,EXP Lane,Jungle,Mid,None,3
+23,Gord,Mage,,70,80,10,20,AoE Damage,Poke,Magic,Ranged,Mid Lane,,Mid,Mana,3
+24,Natalia,Assassin,,60,60,10,90,Burst,Vision,Physical,Melee,Jungle,Roaming,Early-Mid,None,2
+25,Kagura,Mage,,90,40,30,80,Poke,Burst,Magic,Ranged,Mid Lane,,Mid,Mana,3
+26,Chou,Fighter,,30,80,50,70,Hard CC,Dash/Blink,Physical,Melee,EXP Lane,Roaming,Early,None,1
+27,Sun,Fighter,,50,10,50,30,Summoner,DPS,Physical,Melee,EXP Lane,Jungle,Early-Mid,Mana,2
+28,Alpha,Fighter,,40,70,60,10,Sustain,True Damage,Physical,Melee,Jungle,EXP Lane,Mid,Mana,3
+29,Ruby,Fighter,,20,90,90,40,Sustain,AoE CC,Physical,Melee,EXP Lane,,Mid-Late,Mana,4
+30,Yi Sun-shin,Assassin,Marksman,90,20,40,70,Vision,DPS,Physical,Hybrid,Jungle,,Mid-Late,Mana,4
+31,Moskov,Marksman,,60,60,20,50,DPS,Hard CC,Physical,Ranged,Gold Lane,,Late,Mana,5
+32,Johnson,Tank,Support,30,90,80,50,Global Dive,AoE CC,Magic,Melee,Roaming,,Early-Mid,None,2
+33,Cyclops,Mage,,100,70,30,60,DPS,Targeted CC,Magic,Ranged,Mid Lane,,Mid,Mana,3
+34,Estes,Support,,10,20,70,30,Healing,Sustain,Magic,Ranged,Roaming,,Early-Mid,Mana,2
+35,Hilda,Fighter,Tank,40,40,90,40,Sustain,Burst,Physical,Melee,Roaming,EXP Lane,Early,None,1
+36,Aurora,Mage,,70,100,40,10,Hard CC,Burst,Magic,Ranged,Mid Lane,,Mid,Mana,3
+37,Lapu-Lapu,Fighter,,40,40,80,50,Shield,AoE Damage,Physical,Melee,EXP Lane,,Mid,None,3
+38,Vexana,Mage,,90,50,20,10,Summoner,AoE CC,Magic,Ranged,Mid Lane,,Mid,Mana,3
+39,Roger,Fighter,Marksman,40,10,60,50,DPS,Mobility,Physical,Hybrid,Jungle,,Mid,Mana,3
+40,Karrie,Marksman,,80,10,30,40,True Damage,DPS,Physical,Ranged,Gold Lane,,Late,Mana,5
+41,Gatotkaca,Tank,Fighter,30,90,90,10,AoE CC,Damage Reduction,Magic,Melee,Roaming,EXP Lane,Mid,None,3
+42,Harley,Assassin,Mage,90,10,30,60,Burst,Poke,Magic,Ranged,Jungle,Mid Lane,Early-Mid,Mana,2
+43,Irithel,Marksman,,80,10,10,50,DPS,AoE Damage,Physical,Ranged,Gold Lane,,Late,None,5
+44,Grock,Tank,Fighter,40,80,90,60,Hard CC,Burst,Physical,Melee,Roaming,,Early-Mid,None,2
+45,Argus,Fighter,,50,50,70,60,I-Frame,DPS,Physical,Melee,EXP Lane,,Late,None,5
+46,Odette,Mage,,100,70,30,20,AoE Damage,Burst,Magic,Ranged,Mid Lane,,Mid,Mana,3
+47,Lancelot,Assassin,,50,10,40,50,I-Frame,Dash/Blink,Physical,Melee,Jungle,,Early-Mid,Mana,2
+48,Diggie,Support,,40,20,40,50,AoE CC,Shield,Magic,Ranged,Roaming,,Early-Mid,Mana,2
+49,Hylos,Tank,,20,80,100,30,Sustain,Soft CC,Magic,Melee,Roaming,,Early-Mid,Mana,2
+50,Zhask,Mage,,100,40,10,40,Summoner,DPS,Magic,Ranged,Mid Lane,,Mid,Mana,3
+51,Helcurt,Assassin,,50,50,30,50,Burst,Soft CC,Physical,Melee,Jungle,Roaming,Early-Mid,None,2
+52,Pharsa,Mage,,90,50,20,30,Poke,AoE Damage,Magic,Ranged,Mid Lane,,Mid,Mana,3
+53,Lesley,Marksman,Assassin,70,20,10,40,Poke,True Damage,Physical,Ranged,Gold Lane,,Mid-Late,Energy,4
+54,Jawhead,Fighter,,30,60,60,50,Targeted CC,Burst,Physical,Melee,Roaming,EXP Lane,Early-Mid,Mana,2
+55,Angela,Support,,20,50,30,50,Shield,Healing,Magic,Ranged,Roaming,,Mid,Mana,3
+56,Gusion,Assassin,,90,10,30,80,Burst,Dash/Blink,Magic,Melee,Jungle,Mid Lane,Early-Mid,Mana,2
+57,Valir,Mage,,70,70,20,40,Poke,Hard CC,Magic,Ranged,Mid Lane,,Mid,Mana,3
+58,Martis,Fighter,,30,50,60,40,I-Frame,Execute,Physical,Melee,Jungle,EXP Lane,Early-Mid,None,2
+59,Uranus,Tank,,20,20,100,30,Sustain,Healing,Magic,Melee,EXP Lane,,Mid-Late,Mana,4
+60,Hanabi,Marksman,,70,80,20,10,Shield,AoE CC,Physical,Ranged,Gold Lane,,Late,Mana,5
+61,Chang'e,Mage,,80,20,40,30,Poke,DPS,Magic,Ranged,Mid Lane,,Mid,Mana,3
+62,Kaja,Support,Fighter,60,60,30,70,Targeted CC,Burst,Magic,Melee,Roaming,,Early-Mid,Mana,2
+63,Selena,Assassin,Mage,70,100,30,70,Vision,Burst,Magic,Hybrid,Mid Lane,Roaming,Early-Mid,Mana,2
+64,Aldous,Fighter,,30,50,70,60,Global Dive,Burst,Physical,Melee,EXP Lane,,Late,Mana,5
+65,Claude,Marksman,,60,10,30,60,High Mobility,AoE Damage,Physical,Ranged,Gold Lane,,Late,Mana,5
+66,Vale,Mage,,100,70,20,20,AoE Damage,Hard CC,Magic,Ranged,Mid Lane,,Mid,Mana,3
+67,Leomord,Fighter,,50,30,70,60,Shield,DPS,Physical,Melee,Jungle,,Mid,None,3
+68,Lunox,Mage,,90,20,30,90,Burst,I-Frame,Magic,Ranged,Mid Lane,,Late,Mana,5
+69,Hanzo,Assassin,,80,20,70,80,Burst,Vision,Physical,Melee,Jungle,,Mid,Energy,3
+70,Belerick,Tank,,40,100,90,10,Sustain,AoE CC,Magic,Melee,Roaming,,Mid-Late,Mana,4
+71,Kimmy,Marksman,Mage,100,10,20,90,DPS,Poke,Magic,Ranged,Mid Lane,Gold Lane,Mid,None,3
+72,Thamuz,Fighter,,40,20,70,40,Sustain,DPS,Physical,Melee,EXP Lane,,Mid,None,3
+73,Harith,Mage,,50,10,40,50,Shield,Dash/Blink,Magic,Ranged,Gold Lane,Jungle,Mid,Mana,3
+74,Minsitthar,Fighter,,40,80,60,40,Hard CC,AoE CC,Physical,Melee,EXP Lane,Roaming,Mid,Mana,3
+75,Kadita,Mage,Assassin,80,80,40,60,Burst,I-Frame,Magic,Ranged,Mid Lane,,Early-Mid,Mana,2
+76,Faramis,Support,Mage,60,10,40,40,Healing,AoE Damage,Magic,Ranged,Mid Lane,Roaming,Late,Mana,5
+77,Badang,Fighter,,70,50,40,10,Hard CC,Burst,Physical,Melee,Roaming,EXP Lane,Early-Mid,None,2
+78,Khufra,Tank,,20,100,90,50,Hard CC,Damage Reduction,Mixed,Hybrid,Roaming,,Early-Mid,Mana,2
+79,Granger,Marksman,,70,10,30,40,Burst,Dash/Blink,Physical,Ranged,Gold Lane,,Mid-Late,Energy,4
+80,Guinevere,Fighter,,50,70,40,40,Hard CC,Burst,Magic,Melee,EXP Lane,,Mid,None,3
+81,Esmeralda,Mage,,30,60,90,60,Shield,Sustain,Mixed,Melee,EXP Lane,,Mid,Mana,3
+82,Terizla,Fighter,Tank,30,40,90,20,Damage Reduction,AoE Damage,Physical,Melee,EXP Lane,,Mid,None,3
+83,X.Borg,Fighter,,30,10,80,40,True Damage,Sustain,Physical,Hybrid,EXP Lane,,Mid,None,3
+84,Ling,Assassin,,60,30,50,70,High Mobility,Burst,Physical,Melee,Jungle,,Early-Mid,Energy,2
+85,Dyrroth,Fighter,,50,20,50,40,Burst,Sustain,Physical,Melee,EXP Lane,Jungle,Mid,None,3
+86,Lylia,Mage,,100,20,50,50,Poke,AoE Damage,Magic,Ranged,Mid Lane,,Mid,Mana,3
+87,Baxia,Tank,,30,60,100,20,Anti-Heal,Mobility,Magic,Melee,Jungle,Roaming,Mid,Mana,3
+88,Masha,Fighter,Tank,70,30,50,30,DPS,Sustain,Physical,Melee,EXP Lane,,Early-Mid,None,2
+89,Wanwan,Marksman,,60,30,20,60,I-Frame,High Mobility,Physical,Ranged,Gold Lane,,Mid-Late,Mana,4
+90,Silvanna,Fighter,,40,70,50,20,Targeted CC,Sustain,Magic,Melee,EXP Lane,,Mid,Mana,3
+91,Cecilion,Mage,,100,50,40,40,Poke,AoE Damage,Magic,Ranged,Mid Lane,,Late,Mana,5
+92,Carmilla,Support,Tank,20,80,90,40,AoE CC,Sustain,Magic,Melee,Roaming,,Early-Mid,Mana,2
+93,Atlas,Tank,,10,90,80,50,AoE CC,Hard CC,Magic,Melee,Roaming,,Early-Mid,Mana,2
+94,Popol and Kupa,Marksman,,70,70,30,50,Summoner,Hard CC,Mixed,Ranged,Jungle,Gold Lane,Mid,Mana,3
+95,Yu Zhong,Fighter,,40,70,70,70,Sustain,Global Dive,Physical,Melee,EXP Lane,,Mid,None,3
+96,Luo Yi,Mage,,100,40,20,50,AoE Damage,Global Dive,Magic,Ranged,Mid Lane,,Mid,Mana,3
+97,Benedetta,Assassin,Fighter,50,20,60,70,I-Frame,Dash/Blink,Physical,Melee,EXP Lane,,Early-Mid,Mana,2
+98,Khaleed,Fighter,,50,50,80,50,Sustain,AoE Damage,Physical,Melee,Roaming,EXP Lane,Early-Mid,None,2
+99,Barats,Tank,Fighter,30,90,100,40,Sustain,Hard CC,Physical,Melee,Jungle,,Mid,Mana,3
+100,Brody,Marksman,,70,50,40,50,Burst,Hard CC,Physical,Ranged,Gold Lane,,Mid-Late,Mana,4
+101,Yve,Mage,,80,40,40,70,Soft CC,AoE Damage,Magic,Ranged,Mid Lane,,Mid,Mana,3
+102,Mathilda,Support,Assassin,20,40,80,40,Shield,Dash/Blink,Magic,Ranged,Roaming,,Early-Mid,Mana,2
+103,Paquito,Fighter,Assassin,50,40,60,80,Dash/Blink,Burst,Physical,Melee,EXP Lane,,Early,None,1
+104,Gloo,Tank,,30,100,100,70,Sustain,Targeted CC,Magic,Melee,Roaming,EXP Lane,Early-Mid,Mana,2
+105,Beatrix,Marksman,,80,10,30,70,DPS,Burst,Physical,Ranged,Gold Lane,,Mid-Late,None,4
+106,Phoveus,Fighter,,70,30,80,30,Shield,Burst,Mixed,Melee,EXP Lane,,Mid,None,3
+107,Natan,Marksman,,60,20,20,20,DPS,AoE Damage,Magic,Ranged,Gold Lane,,Mid-Late,Mana,4
+108,Aulus,Fighter,,60,10,60,40,DPS,Sustain,Physical,Melee,Jungle,,Mid,None,3
+109,Aamon,Assassin,,70,10,30,50,I-Frame,Burst,Magic,Melee,Jungle,,Early-Mid,Mana,2
+110,Valentina,Mage,,90,80,50,80,Burst,Sustain,Magic,Ranged,Mid Lane,,Mid,Mana,3
+111,Edith,Tank,Marksman,30,100,70,30,Shield,Hard CC,Mixed,Hybrid,EXP Lane,Roaming,Late,None,5
+112,Floryn,Support,,10,70,60,10,Healing,Soft CC,Magic,Ranged,Roaming,,Mid,Mana,3
+113,Yin,Fighter,Assassin,60,80,50,40,Targeted CC,Burst,Physical,Melee,Jungle,EXP Lane,Mid,None,3
+114,Melissa,Marksman,,90,40,20,40,Shield,DPS,Mixed,Ranged,Gold Lane,,Mid-Late,Mana,4
+115,Xavier,Mage,,100,80,20,30,Poke,Burst,Magic,Ranged,Mid Lane,,Mid,Mana,3
+116,Julian,Assassin,Fighter,60,70,60,20,Burst,I-Frame,Magic,Melee,Jungle,EXP Lane,Early-Mid,Mana,2
+117,Fredrinn,Fighter,Tank,50,60,80,40,Sustain,AoE CC,Physical,Melee,Jungle,,Mid,None,3
+118,Joy,Assassin,,70,10,30,90,High Mobility,Shield,Magic,Melee,Jungle,,Early-Mid,None,2
+119,Novaria,Mage,,90,30,30,60,Vision,Poke,Magic,Ranged,Mid Lane,,Mid,Mana,3
+120,Arlott,Fighter,Assassin,60,50,60,50,Dash/Blink,Sustain,Physical,Melee,EXP Lane,,Mid,None,3
+121,Ixia,Marksman,,70,50,30,40,AoE Damage,DPS,Physical,Ranged,Gold Lane,,Late,Mana,5
+122,Nolan,Assassin,,60,20,30,60,Dash/Blink,Burst,Physical,Melee,Jungle,,Early-Mid,Energy,2
+123,Cici,Fighter,,60,30,50,20,Sustain,High Mobility,Physical,Melee,EXP Lane,,Mid,None,3
+124,Chip,Support,Tank,20,60,80,60,Global Dive,Hard CC,Magic,Hybrid,Roaming,,Early-Mid,Mana,2
+125,Zhuxin,Mage,,80,80,40,40,AoE CC,Poke,Magic,Ranged,Mid Lane,,Mid,Mana,3
+126,Suyou,Assassin,Fighter,60,50,60,50,Burst,Damage Reduction,Physical,Melee,Jungle,,Early-Mid,None,2
+127,Lukas,Fighter,,50,60,80,30,DPS,Sustain,Physical,Melee,EXP Lane,Jungle,Mid,None,3
+128,Kalea,Support,Fighter,30,90,60,40,Shield,Healing,Physical,Melee,Roaming,,Early-Mid,None,2
+129,Zetian,Mage,,80,50,30,20,Burst,AoE Damage,Magic,Ranged,Mid Lane,,Mid,Mana,3
+130,Obsidia,Marksman,,70,10,20,40,DPS,Poke,Physical,Ranged,Gold Lane,,Mid-Late,Mana,4
+131,Sora,Fighter,Assassin,60,50,60,50,Burst,Dash/Blink,Physical,Melee,EXP Lane,,Mid,None,3
+132,Marcel,Support,,30,100,70,30,Healing,Hard CC,Physical,Melee,Roaming,,Early-Mid,Mana,2
+133,Hirara,Assassin,,80,40,40,70,Burst,High Mobility,Physical,Melee,Jungle,,Early-Mid,Energy,2
