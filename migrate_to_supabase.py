@@ -262,13 +262,11 @@ def main():
     # duplicate rows unless you truncate the table first (see note below).
     if hard_counters:
         client.table("hard_counter_rules").insert(hard_counters).execute()
-        counts["hard_counter_rules"] = upsert_in_chunks(
-    	client, "hard_counter_rules", hard_counters,
-    	on_conflict="attacker,condition_type,condition_value"
-        print(f"  hard_counter_rules: inserted {len(hard_counters)} rows")
+        counts["hard_counter_rules"] = len(hard_counters)
+        print(f" hard_counter_rules: inserted {len(hard_counters)} rows")
     else:
         counts["hard_counter_rules"] = 0
-        print("  hard_counter_rules: nothing to insert (0 rows found)")
+        print(" hard_counter_rules: nothing to insert (0 rows found)")
 
     counts["style_matrix"] = upsert_in_chunks(
         client, "style_matrix", style_matrix, on_conflict="attacker_tag,defender_tag"
