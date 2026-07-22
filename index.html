@@ -746,13 +746,8 @@ function computeResults(){
   if (primaryLane) {
     laneRows = rows.filter(r => {
       const h = heroInfo(r.name);
-      const match = h && (h.lane1 === primaryLane || h.lane2 === primaryLane);
-      const dup = overall.some(o => o.name === r.name);
-      return match && !dup;
+      return h && (h.lane1 === primaryLane || h.lane2 === primaryLane);
     }).slice(0, 5);
-    console.log("DEBUG: laneRows count:", laneRows.length, "first few:", laneRows.slice(0,3).map(r => r.name + " lane:" + (heroInfo(r.name)?.lane1 || "?")));
-  } else {
-    console.log("DEBUG: no primaryLane found, checking all heroes[0..3]:", heroes.slice(0,3).map(h => ({name: h.name, lane1: h.lane1})));
   }
 
   return { overall, lane: laneRows, laneName: primaryLane };
