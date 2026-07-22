@@ -264,12 +264,6 @@ def compute_score(atk: dict, defn: dict, ref: dict) -> dict:
         "power_spike_timing": pst,
         "style_matchup": sm,
         "hard_counter_bonus": hcb,
-        # NEW — you'll need to add these two columns to counter_scores
-        # via `alter table counter_scores add column range_type_adv numeric;`
-        # and `add column antiheal_adv numeric;` if you want them broken out,
-        # otherwise just fold rta/aha into the total above and drop these keys.
-        "range_type_adv": rta,
-        "antiheal_adv": aha,
     }
 
 

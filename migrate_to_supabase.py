@@ -261,9 +261,12 @@ def main():
     # a plain insert rather than an upsert. Re-running the script will create
     # duplicate rows unless you truncate the table first (see note below).
     if hard_counters:
-        client.table("hard_counter_rules").insert(hard_counters).execute()
-        counts["hard_counter_rules"] = len(hard_counters)
-        print(f" hard_counter_rules: inserted {len(hard_counters)} rows")
+        counts["hard_counter_rules"] = upsert_in_chunks(
+            client, 
+            "hard_counter_rules", 
+            hard_counters, 
+            on_conflict="attacker,condition_type,condition_value"
+        )
     else:
         counts["hard_counter_rules"] = 0
         print(" hard_counter_rules: nothing to insert (0 rows found)")
