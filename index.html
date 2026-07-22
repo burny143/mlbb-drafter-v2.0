@@ -567,10 +567,22 @@ async function loadData(){
     // slightly bigger initial fetch. (If this table grows well past ~50k rows,
     // switch to `.in('defender', filledNames)` filtered queries instead.)
     statusEl.textContent = "loading counter scores…";
-    const { data: scoreRows, error: scoreErr, count } = await client
-      .from("counter_scores")
-      .select("attacker, defender, score", { count: "exact" });
-    if (scoreErr) throw scoreErr;
+    // counter_scores has ~133*132 ≈ 17.5k rows, but PostgREST/Supabase caps
+    // a single select() at the project's "Max Rows" setting (default 1000).
+    // Page through with .range() until a page comes back short of PAGE_SIZE.
+    const PAGE_SIZE = 1000;
+    let scoreRows = [];
+    let from = 0;
+    while (true) {
+      const { data: page, error: pageErr } = await client
+        .from("counter_scores")
+        .select("attacker, defender, score")
+        .range(from, from + PAGE_SIZE - 1);
+      if (pageErr) throw pageErr;
+      scoreRows = scoreRows.concat(page);
+      if (page.length < PAGE_SIZE) break;
+      from += PAGE_SIZE;
+    }
 
     scoreMap.clear();
     for (const r of scoreRows){
