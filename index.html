@@ -180,6 +180,9 @@
     color:var(--text-faint);
     text-transform:uppercase;
     letter-spacing:0.08em;
+    text-align:center;
+    word-break:break-word;
+    padding:0 4px;
   }
   .hex-name{
     font-family:'Rajdhani',sans-serif;
@@ -305,6 +308,53 @@
     letter-spacing:0.06em;
     color:var(--text-dim);
     margin-bottom:10px;
+  }
+
+  /* ---------- lane tabs ---------- */
+  .lane-tabs-wrap{
+    margin-top:30px;
+  }
+  .lane-tabs{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:9px;
+    padding:4px;
+    margin-bottom:16px;
+  }
+  .lane-tab{
+    flex:1 1 0;
+    min-width:80px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    background:transparent;
+    border:none;
+    color:var(--text-dim);
+    padding:9px 8px;
+    border-radius:6px;
+    cursor:pointer;
+    transition:background .15s,color .15s;
+    text-align:center;
+  }
+  .lane-tab:hover{ color:var(--text); }
+  .lane-tab.active{
+    background:var(--gold);
+    color:#181206;
+    font-weight:600;
+  }
+
+  /* ---------- slot flex note ---------- */
+  .hex-flex-note{
+    font-family:'JetBrains Mono',monospace;
+    font-size:7.5px;
+    color:var(--text-faint);
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    opacity:0.75;
   }
 
   .empty-state{
@@ -490,7 +540,7 @@
     </div>
   </header>
 
-  <p class="board-label">Enemy draft — tap a slot to search</p>
+  <p class="board-label">Enemy draft — each slot has a suggested lane, tap to search (any hero can still fill it)</p>
   <div class="slots" id="slots"></div>
 
   <div class="results-head">
@@ -499,7 +549,7 @@
   </div>
 
   <div id="resultsArea">
-    <div class="empty-state">Fill at least one enemy slot above.<br><strong>Top 10 counters</strong> will rank here.</div>
+    <div class="empty-state">Fill at least one enemy slot above.<br><strong>Top 5 overall</strong> plus <strong>top 5 per lane</strong> (30 heroes total) will rank here.</div>
   </div>
 
   <div class="status-bar" id="status">connecting…</div>
@@ -537,6 +587,29 @@ let scoreMap = new Map();     // "attacker|defender" -> score
 let slots = [null,null,null,null,null];
 let mode = "sum";             // "sum" | "avg"
 let activeSearchSlot = null;
+let LANES = [];                // the 5 detected lanes, in display order
+let activeLaneTab = null;      // currently selected lane tab in results
+let lastResults = null;        // cached computeResults() output
+
+// preferred lane ordering when we can detect standard MLBB lane names
+const LANE_PRIORITY = ["exp","mid","jungle","gold","roam","support"];
+
+function computeLanes(){
+  const counts = new Map();
+  heroes.forEach(h => {
+    if (h.lane1) counts.set(h.lane1, (counts.get(h.lane1) || 0) + 1);
+    if (h.lane2) counts.set(h.lane2, (counts.get(h.lane2) || 0) + 1);
+  });
+  let lanes = Array.from(counts.keys());
+  lanes.sort((a, b) => {
+    const ai = LANE_PRIORITY.findIndex(p => a.toLowerCase().includes(p));
+    const bi = LANE_PRIORITY.findIndex(p => b.toLowerCase().includes(p));
+    const av = ai === -1 ? 99 : ai, bv = bi === -1 ? 99 : bi;
+    if (av !== bv) return av - bv;
+    return a.localeCompare(b);
+  });
+  return lanes.slice(0, 5);
+}
 
 const statusEl = document.getElementById("status");
 const slotsEl = document.getElementById("slots");
@@ -559,6 +632,8 @@ async function loadData(){
     if (heroErr) throw heroErr;
     heroes = heroRows;
     heroNames = heroes.map(h => h.name);
+    LANES = computeLanes();
+    if (activeLaneTab === null) activeLaneTab = LANES[0] || null;
 
     // 133 heroes × 132 opponents ≈ 17.5k rows. That's roughly 1-2MB of JSON —
     // small enough to pull once and keep in memory, rather than re-querying
@@ -632,11 +707,13 @@ function renderSlots(){
         renderResults();
       });
     } else {
+      const lane = LANES[i];
       slotDiv.innerHTML = `
-        <div class="hex" data-open="${i}">
+        <div class="hex" data-open="${i}" title="${lane ? "Suggested: " + lane + " — any hero can fill this slot" : ""}">
           <span class="hex-slotnum">P${i+1}</span>
           <div class="hex-plus">+</div>
-          <div class="hex-empty-label">Enemy Pick ${i+1}</div>
+          <div class="hex-empty-label">${lane ? escapeHtml(lane) + " Pick" : "Enemy Pick " + (i+1)}</div>
+          <div class="hex-flex-note">any hero</div>
         </div>
         <div class="search-pop" id="pop-${i}">
           <input type="text" placeholder="Search hero…" data-input="${i}" autocomplete="off">
@@ -731,7 +808,7 @@ function getScore(attacker, defender){
 
 function computeResults(){
   const filled = slots.filter(Boolean);
-  if (filled.length === 0) return [];
+  if (filled.length === 0) return null;
 
   const takenSet = new Set(filled);
   const candidates = heroNames.filter(n => !takenSet.has(n));
@@ -748,21 +825,19 @@ function computeResults(){
 
   rows.sort((a,b) => b.agg - a.agg);
 
-  const firstEnemy = heroInfo(filled[0]);
-  const primaryLane = firstEnemy?.lane1 || "";
-  console.log("DEBUG: first enemy:", filled[0], "lane1:", primaryLane, "heroInfo:", firstEnemy);
-
+  // Top 5 overall — unrestricted by lane, unchanged behavior.
   const overall = rows.slice(0, 5);
 
-  let laneRows = [];
-  if (primaryLane) {
-    laneRows = rows.filter(r => {
+  // Top 5 for every detected lane (5 lanes x 5 heroes = 25).
+  const byLane = {};
+  LANES.forEach(lane => {
+    byLane[lane] = rows.filter(r => {
       const h = heroInfo(r.name);
-      return h && (h.lane1 === primaryLane || h.lane2 === primaryLane);
+      return h && (h.lane1 === lane || h.lane2 === lane);
     }).slice(0, 5);
-  }
+  });
 
-  return { overall, lane: laneRows, laneName: primaryLane };
+  return { overall, byLane };
 }
 
 function scoreClass(v){
@@ -771,52 +846,81 @@ function scoreClass(v){
   return "neu";
 }
 
+function cardHTML(r, idx, isTop){
+  const h = heroInfo(r.name) || {};
+  const col = roleColor(h.role);
+  const bdRows = r.breakdown.map(b => {
+    const pct = Math.max(-50, Math.min(50, (b.score / BAR_SCALE) * 50));
+    const cls = scoreClass(b.score);
+    const barColor = cls === "pos" ? "var(--jade)" : cls === "neg" ? "var(--crimson)" : "var(--fog)";
+    const left = pct >= 0 ? "50%" : (50 + pct) + "%";
+    const width = Math.abs(pct) + "%";
+    return `
+      <div class="bd-row">
+        <div class="bd-enemy">vs ${escapeHtml(b.enemy)}</div>
+        <div class="bd-track">
+          <div class="bd-fill" style="left:${left}; width:${width}; background:${barColor};"></div>
+        </div>
+        <div class="bd-score ${cls}">${b.score > 0 ? "+" : ""}${b.score.toFixed(0)}</div>
+      </div>`;
+  }).join("");
+
+  return `
+    <div class="result-card">
+      <div class="rank ${isTop ? "top" : ""}">${idx+1}</div>
+      <div class="rc-main">
+        <div class="rc-name-row">
+          <span class="rc-name">${escapeHtml(r.name)}</span>
+          <span class="rc-role" style="--r-col:${col}">${escapeHtml(h.role || "")}${h.role2 ? " / " + escapeHtml(h.role2) : ""}${h.lane1 ? " · " + escapeHtml(h.lane1) : ""}${h.lane2 ? "/" + escapeHtml(h.lane2) : ""}</span>
+        </div>
+        <div class="breakdown">${bdRows}</div>
+      </div>
+      <div>
+        <div class="agg-score ${scoreClass(r.agg)}">${r.agg > 0 ? "+" : ""}${r.agg.toFixed(1)}</div>
+        <div class="agg-label">${mode === "sum" ? "total" : "avg"} score</div>
+      </div>
+    </div>`;
+}
+
+function laneTabsHTML(){
+  if (!LANES.length) return "";
+  const tabs = LANES.map(lane => `
+    <button class="lane-tab ${lane === activeLaneTab ? "active" : ""}" data-lane="${escapeHtml(lane)}">${escapeHtml(lane)}</button>
+  `).join("");
+  return `<div class="lane-tabs" role="tablist" aria-label="Lane">${tabs}</div>`;
+}
+
+function renderLaneSection(){
+  const section = document.getElementById("laneSection");
+  if (!section || !lastResults) return;
+  const rows = (activeLaneTab && lastResults.byLane[activeLaneTab]) || [];
+  section.innerHTML = rows.length
+    ? rows.map((r, i) => cardHTML(r, i, false)).join("")
+    : `<div class="empty-state">No lane-eligible counters found for ${escapeHtml(activeLaneTab || "this lane")} among the remaining heroes.</div>`;
+
+  document.querySelectorAll(".lane-tab").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.lane === activeLaneTab);
+    btn.onclick = () => {
+      activeLaneTab = btn.dataset.lane;
+      renderLaneSection();
+    };
+  });
+}
+
 function renderResults(){
   const filled = slots.filter(Boolean);
   if (filled.length === 0){
-    resultsArea.innerHTML = `<div class="empty-state">Fill at least one enemy slot above.<br><strong>Top 10 counters</strong> will rank here.</div>`;
+    resultsArea.innerHTML = `<div class="empty-state">Fill at least one enemy slot above.<br><strong>Top 5 overall</strong> plus <strong>top 5 per lane</strong> (30 heroes total) will rank here.</div>`;
     resultsCount.textContent = "";
+    lastResults = null;
     return;
   }
 
   const results = computeResults();
+  lastResults = results;
   resultsCount.textContent = `vs ${filled.length} pick${filled.length>1?"s":""} · ${mode === "sum" ? "summed" : "averaged"}`;
 
-  function cardHTML(r, idx, isTop){
-    const h = heroInfo(r.name) || {};
-    const col = roleColor(h.role);
-    const bdRows = r.breakdown.map(b => {
-      const pct = Math.max(-50, Math.min(50, (b.score / BAR_SCALE) * 50));
-      const cls = scoreClass(b.score);
-      const barColor = cls === "pos" ? "var(--jade)" : cls === "neg" ? "var(--crimson)" : "var(--fog)";
-      const left = pct >= 0 ? "50%" : (50 + pct) + "%";
-      const width = Math.abs(pct) + "%";
-      return `
-        <div class="bd-row">
-          <div class="bd-enemy">vs ${escapeHtml(b.enemy)}</div>
-          <div class="bd-track">
-            <div class="bd-fill" style="left:${left}; width:${width}; background:${barColor};"></div>
-          </div>
-          <div class="bd-score ${cls}">${b.score > 0 ? "+" : ""}${b.score.toFixed(0)}</div>
-        </div>`;
-    }).join("");
-
-    return `
-      <div class="result-card">
-        <div class="rank ${isTop ? "top" : ""}">${idx+1}</div>
-        <div class="rc-main">
-          <div class="rc-name-row">
-            <span class="rc-name">${escapeHtml(r.name)}</span>
-            <span class="rc-role" style="--r-col:${col}">${escapeHtml(h.role || "")}${h.role2 ? " / " + escapeHtml(h.role2) : ""}${h.lane1 ? " · " + escapeHtml(h.lane1) : ""}${h.lane2 ? "/" + escapeHtml(h.lane2) : ""}</span>
-          </div>
-          <div class="breakdown">${bdRows}</div>
-        </div>
-        <div>
-          <div class="agg-score ${scoreClass(r.agg)}">${r.agg > 0 ? "+" : ""}${r.agg.toFixed(1)}</div>
-          <div class="agg-label">${mode === "sum" ? "total" : "avg"} score</div>
-        </div>
-      </div>`;
-  }
+  if (!activeLaneTab && LANES.length) activeLaneTab = LANES[0];
 
   let html = "";
 
@@ -825,12 +929,17 @@ function renderResults(){
     html += results.overall.map((r, i) => cardHTML(r, i, true)).join("");
   }
 
-  if (results.lane.length){
-    html += `<div class="results-subtitle" style="margin-top:18px;">Top 5 — ${escapeHtml(results.laneName)} Lane</div>`;
-    html += results.lane.map((r, i) => cardHTML(r, i, false)).join("");
+  if (LANES.length){
+    html += `
+      <div class="lane-tabs-wrap">
+        <div class="results-subtitle">Top 5 — By Lane</div>
+        ${laneTabsHTML()}
+        <div id="laneSection"></div>
+      </div>`;
   }
 
   resultsArea.innerHTML = html;
+  renderLaneSection();
 }
 
 function escapeHtml(s){
