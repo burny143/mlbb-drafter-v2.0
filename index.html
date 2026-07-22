@@ -297,6 +297,16 @@
     color:var(--text-faint);
   }
 
+  .results-subtitle{
+    font-family:'Rajdhani',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--text-dim);
+    margin-bottom:10px;
+  }
+
   .empty-state{
     border:1px dashed var(--border);
     border-radius:12px;
@@ -544,7 +554,7 @@ async function loadData(){
     statusEl.textContent = "loading heroes…";
     const { data: heroRows, error: heroErr } = await client
       .from("heroes")
-      .select("name, role, role2")
+      .select("name, role, role2, lane1, lane2")
       .order("name");
     if (heroErr) throw heroErr;
     heroes = heroRows;
@@ -725,7 +735,27 @@ function computeResults(){
   });
 
   rows.sort((a,b) => b.agg - a.agg);
-  return rows.slice(0, 10);
+
+  const firstEnemy = heroInfo(filled[0]);
+  const primaryLane = firstEnemy?.lane1 || "";
+  console.log("DEBUG: first enemy:", filled[0], "lane1:", primaryLane, "heroInfo:", firstEnemy);
+
+  const overall = rows.slice(0, 5);
+
+  let laneRows = [];
+  if (primaryLane) {
+    laneRows = rows.filter(r => {
+      const h = heroInfo(r.name);
+      const match = h && (h.lane1 === primaryLane || h.lane2 === primaryLane);
+      const dup = overall.some(o => o.name === r.name);
+      return match && !dup;
+    }).slice(0, 5);
+    console.log("DEBUG: laneRows count:", laneRows.length, "first few:", laneRows.slice(0,3).map(r => r.name + " lane:" + (heroInfo(r.name)?.lane1 || "?")));
+  } else {
+    console.log("DEBUG: no primaryLane found, checking all heroes[0..3]:", heroes.slice(0,3).map(h => ({name: h.name, lane1: h.lane1})));
+  }
+
+  return { overall, lane: laneRows, laneName: primaryLane };
 }
 
 function scoreClass(v){
@@ -745,7 +775,7 @@ function renderResults(){
   const results = computeResults();
   resultsCount.textContent = `vs ${filled.length} pick${filled.length>1?"s":""} · ${mode === "sum" ? "summed" : "averaged"}`;
 
-  resultsArea.innerHTML = results.map((r, idx) => {
+  function cardHTML(r, idx, isTop){
     const h = heroInfo(r.name) || {};
     const col = roleColor(h.role);
     const bdRows = r.breakdown.map(b => {
@@ -766,11 +796,11 @@ function renderResults(){
 
     return `
       <div class="result-card">
-        <div class="rank ${idx===0 ? "top" : ""}">${idx+1}</div>
+        <div class="rank ${isTop ? "top" : ""}">${idx+1}</div>
         <div class="rc-main">
           <div class="rc-name-row">
             <span class="rc-name">${escapeHtml(r.name)}</span>
-            <span class="rc-role" style="--r-col:${col}">${escapeHtml(h.role || "")}${h.role2 ? " / " + escapeHtml(h.role2) : ""}</span>
+            <span class="rc-role" style="--r-col:${col}">${escapeHtml(h.role || "")}${h.role2 ? " / " + escapeHtml(h.role2) : ""}${h.lane1 ? " · " + escapeHtml(h.lane1) : ""}${h.lane2 ? "/" + escapeHtml(h.lane2) : ""}</span>
           </div>
           <div class="breakdown">${bdRows}</div>
         </div>
@@ -779,7 +809,21 @@ function renderResults(){
           <div class="agg-label">${mode === "sum" ? "total" : "avg"} score</div>
         </div>
       </div>`;
-  }).join("");
+  }
+
+  let html = "";
+
+  if (results.overall.length){
+    html += `<div class="results-subtitle">Top 5 — All Lanes</div>`;
+    html += results.overall.map((r, i) => cardHTML(r, i, true)).join("");
+  }
+
+  if (results.lane.length){
+    html += `<div class="results-subtitle" style="margin-top:18px;">Top 5 — ${escapeHtml(results.laneName)} Lane</div>`;
+    html += results.lane.map((r, i) => cardHTML(r, i, false)).join("");
+  }
+
+  resultsArea.innerHTML = html;
 }
 
 function escapeHtml(s){

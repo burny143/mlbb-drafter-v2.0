@@ -67,9 +67,19 @@ Usage:
 import argparse
 import os
 import sys
+from pathlib import Path
 from typing import Any, Optional
 
 from supabase import create_client, Client
+
+# Load .env file if present
+_dotenv = Path(__file__).parent / ".env"
+if _dotenv.exists():
+    for _line in _dotenv.read_text().splitlines():
+        _line = _line.strip()
+        if _line and not _line.startswith("#") and "=" in _line:
+            _k, _v = _line.split("=", 1)
+            os.environ.setdefault(_k.strip(), _v.strip())
 
 CHUNK_SIZE = 500
 PAGE_SIZE = 1000  # supabase-py / PostgREST default row cap per request
@@ -236,8 +246,10 @@ def compute_score(atk: dict, defn: dict, ref: dict) -> dict:
     pst = power_spike_timing(atk, defn, weights["spike_mult"])
     sm = style_matchup(atk, defn, ref["style_matrix"], weights["style_mult"])
     hcb = hard_counter_bonus(atk, defn, ref["hard_counter_rules"])
+    rta = range_type_advantage(atk, defn, weights["rangetype_mult"])
+    aha = antiheal_advantage(atk, defn, weights["antiheal_mult"])
 
-    total = ra + st + dg + dta + pst + sm + hcb
+    total = ra + st + dg + dta + pst + sm + hcb + rta + aha
     if override is not None:
         total = override
 
@@ -252,6 +264,12 @@ def compute_score(atk: dict, defn: dict, ref: dict) -> dict:
         "power_spike_timing": pst,
         "style_matchup": sm,
         "hard_counter_bonus": hcb,
+        # NEW — you'll need to add these two columns to counter_scores
+        # via `alter table counter_scores add column range_type_adv numeric;`
+        # and `add column antiheal_adv numeric;` if you want them broken out,
+        # otherwise just fold rta/aha into the total above and drop these keys.
+        "range_type_adv": rta,
+        "antiheal_adv": aha,
     }
 
 
@@ -291,6 +309,21 @@ def print_preview(records: list[dict], n: int = 10) -> None:
             "style_matchup", "hard_counter_bonus"]
     for r in records[:n]:
         print({c: round(r[c], 3) if isinstance(r[c], float) else r[c] for c in cols})
+
+MOBILITY_TAGS = {"Dash/Blink", "High Mobility", "Global Dive", "Mobility"}
+SUSTAIN_HEAL_TAGS = {"Sustain", "Healing"}
+
+def range_type_advantage(atk: dict, defn: dict, rangetype_mult: float) -> float:
+    atk_tags = {atk.get("style1"), atk.get("style2")}
+    if atk_tags & MOBILITY_TAGS and defn.get("range_type") == "Ranged":
+        return rangetype_mult
+    return 0.0
+
+def antiheal_advantage(atk: dict, defn: dict, antiheal_mult: float) -> float:
+    def_tags = {defn.get("style1"), defn.get("style2")}
+    if atk.get("has_antiheal") and (def_tags & SUSTAIN_HEAL_TAGS):
+        return antiheal_mult
+    return 0.0
 
 
 def main():

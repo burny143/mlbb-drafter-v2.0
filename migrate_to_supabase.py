@@ -23,10 +23,20 @@ Usage:
 
 import os
 import sys
+from pathlib import Path
 from typing import Any, Optional
 
 import openpyxl
 from supabase import create_client, Client
+
+# Load .env file if present
+_dotenv = Path(__file__).parent / ".env"
+if _dotenv.exists():
+    for _line in _dotenv.read_text().splitlines():
+        _line = _line.strip()
+        if _line and not _line.startswith("#") and "=" in _line:
+            _k, _v = _line.split("=", 1)
+            os.environ.setdefault(_k.strip(), _v.strip())
 
 
 # ----------------------------------------------------------------------------
