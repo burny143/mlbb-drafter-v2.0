@@ -297,7 +297,7 @@ The script:
 1. Extracts **heroes** from the `Heroes` sheet
 2. Extracts **weights, matrices, rules, overrides** from `Data-Input` sheet at documented row ranges
 3. **Upserts** into `heroes`, `global_weights`, `role_matrix`, `style_matrix`, `manual_overrides`
-4. **Inserts** (not upserts) into `hard_counter_rules` — re-running without truncating creates duplicates (see [Notes](#notes--gotchas))
+4. **Upserts** into `hard_counter_rules` — uses a unique index on `(attacker, condition_type, condition_value)` so re-running safely updates existing rules
 5. Prints row counts and validates hero count is exactly 133
 
 ---
@@ -358,7 +358,7 @@ Two CI workflows are included:
 
 ### 2. `recompute_counters.yml` — Score Recalculation
 
-- **Triggers on**: Push to `main` touching `data/**` or `compute_counters.py`; also manual
+- **Triggers on**: Push to `main` touching `mobile_legends_heroes_updated.xlsx` or `compute_counters.py`; also manual
 - **Runs**: Checkout → Python 3.12 → `pip install` → pre-flight diagnostic → `python compute_counters.py`
 
 ### Required GitHub Secrets
@@ -401,10 +401,7 @@ Example: A rule like `("Karrie", "Tag", "Tank", 20, 5)` means Karrie gets +20 ag
 
 ## Notes & Gotchas
 
-1. **`hard_counter_rules` duplicates**: This table uses a `serial` auto-increment PK with no natural unique key. The migration script uses `insert` (not `upsert`), so **re-running the migration without truncating first will create duplicate rows**:
-   ```sql
-   truncate table hard_counter_rules;
-   ```
+1. **`hard_counter_rules` upsert**: The table has a unique index on `(attacker, condition_type, condition_value)`. The migration script upserts, so re-running safely updates existing rules without creating duplicates.
 
 2. **`Data-Input` is the only hand-edit sheet**: The `Heroes` sheet is raw data; `CounterCalculator`, `Lookup`, and `LookupCalc` are formula-driven convenience views inside Excel — these are not migrated.
 

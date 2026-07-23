@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'data/**'
+      - 'mobile_legends_heroes_updated.xlsx'
       - 'compute_counters.py'
   workflow_dispatch: {}
 

@@ -73,16 +73,17 @@ comment on table style_matrix is '22x22 style/tag interaction grid (the 22 "In-u
 create table if not exists hard_counter_rules (
     id                   serial primary key,
     attacker             text not null,
-    condition_type       text not null check (condition_type in ('Tag', 'Hero')),
+    condition_type       text not null check (condition_type in ('Tag', 'Hero', 'Role', 'DamageType', 'Resource')),
     condition_value      text not null,
     bonus_to_attacker    numeric not null,
     penalty_to_defender  numeric not null,
     note                 text
 );
 
-comment on table hard_counter_rules is 'One row per hard-counter rule. Fires when ConditionType=Tag and defender.style1/style2 = ConditionValue, or ConditionType=Hero and defender.name = ConditionValue. Contribution = bonus_to_attacker - penalty_to_defender.';
+comment on table hard_counter_rules is 'One row per hard-counter rule. condition_type is one of: Tag, Hero, Role, DamageType, Resource. Contribution = bonus_to_attacker - penalty_to_defender.';
 
 create index if not exists idx_hard_counter_rules_attacker on hard_counter_rules (attacker);
+create unique index if not exists idx_hard_counter_rules_unique on hard_counter_rules (attacker, condition_type, condition_value);
 
 -- ----------------------------------------------------------------------------
 -- 6) manual_overrides — force an exact score for one pair (Block 6, rows 190-1189)

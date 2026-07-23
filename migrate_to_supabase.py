@@ -257,9 +257,8 @@ def main():
         client, "role_matrix", role_matrix, on_conflict="attacker_role,defender_role"
     )
 
-    # hard_counter_rules has no natural unique key (id is serial), so this is
-    # a plain insert rather than an upsert. Re-running the script will create
-    # duplicate rows unless you truncate the table first (see note below).
+    # hard_counter_rules uses a unique index on (attacker, condition_type, condition_value).
+    # This is an upsert so re-running the migration safely updates existing rules.
     if hard_counters:
         counts["hard_counter_rules"] = upsert_in_chunks(
             client, 
