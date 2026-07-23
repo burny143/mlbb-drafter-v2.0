@@ -222,15 +222,15 @@ def hard_counter_bonus(atk: dict, defn: dict, rules: list[dict]) -> float:
         cval = rule["condition_value"]
         matched = False
         if ctype == "Tag":
-            matched = cval.lower() in (defn.get("style1", "").lower(), defn.get("style2", "").lower())
+            matched = cval.lower() in ((defn.get("style1") or "").lower(), (defn.get("style2") or "").lower())
         elif ctype == "Hero":
             matched = defn["name"].lower() == cval.lower()
         elif ctype == "Role":
-            matched = cval.lower() in (defn.get("role", "").lower(), defn.get("role2", "").lower())
+            matched = cval.lower() in ((defn.get("role") or "").lower(), (defn.get("role2") or "").lower())
         elif ctype == "DamageType":
-            matched = defn["damage_type"].lower() == cval.lower()
+            matched = (defn["damage_type"] or "").lower() == cval.lower()
         elif ctype == "Resource":
-            matched = defn["resource"].lower() == cval.lower()
+            matched = (defn["resource"] or "").lower() == cval.lower()
         if matched:
             total += float(rule["bonus_to_attacker"]) - float(rule["penalty_to_defender"])
     return total
