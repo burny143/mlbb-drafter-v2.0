@@ -358,7 +358,7 @@ Two CI workflows are included:
 
 ### 2. `recompute_counters.yml` — Score Recalculation
 
-- **Triggers on**: Push to `main` touching `mobile_legends_heroes_updated.xlsx` or `compute_counters.py`; also manual
+- **Triggers on**: Every push to `main`; also manual
 - **Runs**: Checkout → Python 3.12 → `pip install` → pre-flight diagnostic → `python compute_counters.py`
 
 ### Required GitHub Secrets

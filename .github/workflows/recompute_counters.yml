@@ -3,9 +3,6 @@ name: Recompute MLBB counter scores
 on:
   push:
     branches: [main]
-    paths:
-      - 'mobile_legends_heroes_updated.xlsx'
-      - 'compute_counters.py'
   workflow_dispatch: {}
 
 jobs:
