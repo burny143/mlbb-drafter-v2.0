@@ -149,21 +149,26 @@ def extract_role_matrix(wb) -> list[dict]:
 def extract_hard_counter_rules(wb) -> list[dict]:
     ws = wb["Data-Input"]
     start, end = HARD_COUNTER_ROWS
-    records = []
+    seen = {}
     for row in range(start, end + 1):
         attacker, condition_type, condition_value, bonus, penalty, note = row_values(ws, row, 1, 6)
         attacker = clean(attacker)
         if attacker is None:
             continue  # skip blank rows
-        records.append({
-            "attacker": attacker,
-            "condition_type": clean(condition_type),
-            "condition_value": clean(condition_value),
-            "bonus_to_attacker": float(bonus),
-            "penalty_to_defender": float(penalty),
-            "note": clean(note),
-        })
-    return records
+        key = (attacker, clean(condition_type), clean(condition_value))
+        if key in seen:
+            seen[key]["bonus_to_attacker"] += float(bonus)
+            seen[key]["penalty_to_defender"] += float(penalty)
+        else:
+            seen[key] = {
+                "attacker": attacker,
+                "condition_type": clean(condition_type),
+                "condition_value": clean(condition_value),
+                "bonus_to_attacker": float(bonus),
+                "penalty_to_defender": float(penalty),
+                "note": clean(note),
+            }
+    return list(seen.values())
 
 
 def extract_style_matrix(wb) -> list[dict]:
