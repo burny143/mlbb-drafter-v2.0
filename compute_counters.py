@@ -214,22 +214,23 @@ def style_matchup(atk: dict, defn: dict, style_matrix: dict, style_mult: float) 
 
 def hard_counter_bonus(atk: dict, defn: dict, rules: list[dict]) -> float:
     total = 0.0
+    atk_name_lower = atk["name"].lower()
     for rule in rules:
-        if rule["attacker"] != atk["name"]:
+        if rule["attacker"].lower() != atk_name_lower:
             continue
         ctype = rule["condition_type"]
         cval = rule["condition_value"]
         matched = False
         if ctype == "Tag":
-            matched = cval in (defn.get("style1"), defn.get("style2"))
+            matched = cval.lower() in (defn.get("style1", "").lower(), defn.get("style2", "").lower())
         elif ctype == "Hero":
-            matched = defn["name"] == cval
+            matched = defn["name"].lower() == cval.lower()
         elif ctype == "Role":
-            matched = cval in (defn.get("role"), defn.get("role2"))
+            matched = cval.lower() in (defn.get("role", "").lower(), defn.get("role2", "").lower())
         elif ctype == "DamageType":
-            matched = defn["damage_type"] == cval
+            matched = defn["damage_type"].lower() == cval.lower()
         elif ctype == "Resource":
-            matched = defn["resource"] == cval
+            matched = defn["resource"].lower() == cval.lower()
         if matched:
             total += float(rule["bonus_to_attacker"]) - float(rule["penalty_to_defender"])
     return total
