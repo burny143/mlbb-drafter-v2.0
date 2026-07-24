@@ -641,69 +641,6 @@
   }
   .status-bar.error{ color:var(--crimson); }
 
-  /* ---------- narrative summaries ---------- */
-  .quick-take{
-    background:var(--bg-panel-2);
-    border:1px solid var(--border);
-    border-left:3px solid var(--gold);
-    border-radius:8px;
-    padding:12px 16px;
-    margin-bottom:16px;
-    font-size:13px;
-    line-height:1.6;
-    color:var(--text-dim);
-    animation:fadeIn .35s ease both;
-  }
-  .quick-take strong{ color:var(--text); }
-
-  .final-summary{
-    background:var(--bg-panel-2);
-    border:1px solid var(--border);
-    border-radius:10px;
-    padding:12px 14px;
-    margin-bottom:14px;
-    font-size:12.5px;
-    line-height:1.65;
-    color:var(--text-dim);
-  }
-  .final-summary strong{ color:var(--gold); }
-
-  .role-coverage{
-    display:flex;
-    gap:6px;
-    margin-bottom:14px;
-    flex-wrap:wrap;
-  }
-  .role-chip2{
-    font-family:'JetBrains Mono',monospace;
-    font-size:9.5px;
-    letter-spacing:0.05em;
-    text-transform:uppercase;
-    padding:4px 9px;
-    border-radius:6px;
-    border:1px solid var(--border);
-    color:var(--text-faint);
-    transition:all .15s;
-  }
-  .role-chip2.have{
-    color:#0C0F14;
-    background:var(--r-col,var(--gold));
-    border-color:transparent;
-    font-weight:700;
-  }
-
-  /* ---------- motion / emphasis ---------- */
-  @keyframes fadeIn{
-    from{ opacity:0; transform:translateY(6px); }
-    to{ opacity:1; transform:translateY(0); }
-  }
-  .result-card{ animation:fadeIn .3s ease both; }
-  .result-card.top-pick{
-    box-shadow:0 0 0 1px rgba(212,169,78,0.35), 0 10px 28px rgba(212,169,78,0.10);
-    background:linear-gradient(180deg, rgba(212,169,78,0.07), transparent 45%), var(--bg-panel);
-  }
-  .final-card{ animation:fadeIn .3s ease both; }
-
   footer{
     margin-top:60px;
     padding-top:20px;
@@ -765,10 +702,7 @@
   <div id="finalModal" class="modal-overlay" style="display:none" onclick="closeFinal(event)">
     <div class="modal-panel" onclick="event.stopPropagation()">
       <div class="modal-header">
-        <div>
-          <span class="modal-title">Final Line-up</span>
-          <div style="font-size:11px;color:var(--text-faint);margin-top:2px;">Top counter per role — 5 picks, one summary</div>
-        </div>
+        <span class="modal-title">Final Line-up</span>
         <button class="modal-close" onclick="closeFinal()">✕</button>
       </div>
       <div id="finalBody" class="modal-body"></div>
@@ -1117,9 +1051,8 @@ function cardHTML(r, idx, isTop){
       </div>`;
   }).join("");
 
-  const topPick = isTop && idx === 0;
   return `
-    <div class="result-card${topPick ? " top-pick" : ""}" style="border-left-color:${col === "var(--fog)" ? "var(--border)" : col}; animation-delay:${Math.min(idx,6)*35}ms">
+    <div class="result-card">
       <div class="rank ${isTop ? "top" : ""}">${idx+1}</div>
       <div class="rc-main">
         <div class="rc-name-row">
@@ -1133,47 +1066,6 @@ function cardHTML(r, idx, isTop){
         <div class="agg-label">${mode === "sum" ? "total" : "avg"} score</div>
       </div>
     </div>`;
-}
-
-const RULE_TYPE_LABEL = {
-  Hero: "direct hard-counter matchups",
-  Tag: "favorable trait exploits",
-  Role: "role advantage",
-  DamageType: "damage-type exploits",
-  Resource: "resource pressure"
-};
-
-function summarizeTop(r, filledCount){
-  const h = heroInfo(r.name) || {};
-  const typeCount = {};
-  r.breakdown.forEach(b => (b.matched_rules||[]).forEach(rule => {
-    typeCount[rule.type] = (typeCount[rule.type]||0) + 1;
-  }));
-  const topType = Object.entries(typeCount).sort((a,b)=>b[1]-a[1])[0];
-  const reason = topType ? `mainly via ${RULE_TYPE_LABEL[topType[0]] || topType[0]}` : `a balanced stat and timing edge`;
-  return `<strong>${escapeHtml(r.name)}</strong>${h.role ? " (" + escapeHtml(h.role) + ")" : ""} is the strongest answer at <strong>${r.agg > 0 ? "+" : ""}${r.agg.toFixed(1)}</strong> ${mode === "sum" ? "combined" : "avg"} score — ${reason} across your ${filledCount} enemy pick${filledCount>1?"s":""}.`;
-}
-
-const ROLES_ALL = ["Tank","Fighter","Assassin","Mage","Marksman","Support"];
-
-function buildRoleCoverage(picks){
-  const have = new Set(picks.map(p => (heroInfo(p.name)||{}).role));
-  return `<div class="role-coverage">${ROLES_ALL.map(r =>
-    `<span class="role-chip2 ${have.has(r) ? "have" : ""}" style="--r-col:${roleColor(r)}">${r}</span>`
-  ).join("")}</div>`;
-}
-
-function buildFinalSummary(picks){
-  if (!picks.length) return "";
-  const avg = picks.reduce((a,p)=>a+p.agg,0) / picks.length;
-  const roles = new Set(picks.map(p => (heroInfo(p.name)||{}).role).filter(Boolean));
-  const best = picks.reduce((a,b)=> b.agg > a.agg ? b : a);
-  const worst = picks.reduce((a,b)=> b.agg < a.agg ? b : a);
-  let line = `This line-up spans <strong>${roles.size}</strong> role${roles.size!==1?"s":""} and averages <strong>${avg > 0 ? "+" : ""}${avg.toFixed(1)}</strong> per slot. Strongest: <strong>${escapeHtml(best.name)}</strong> (${best.agg > 0 ? "+" : ""}${best.agg.toFixed(1)}).`;
-  if (worst.name !== best.name){
-    line += ` Weakest: <strong>${escapeHtml(worst.name)}</strong> (${worst.agg > 0 ? "+" : ""}${worst.agg.toFixed(1)})${worst.agg < 3 ? " — consider a manual swap here." : "."}`;
-  }
-  return line;
 }
 
 function laneTabsHTML(){
@@ -1222,7 +1114,6 @@ function renderResults(){
   let html = "";
 
   if (results.overall.length){
-    html += `<div class="quick-take">${summarizeTop(results.overall[0], filled.length)}</div>`;
     html += `<div class="results-subtitle">Top 5 — All Lanes</div>`;
     html += results.overall.map((r, i) => cardHTML(r, i, true)).join("");
   }
@@ -1249,9 +1140,7 @@ function openFinal(){
     document.getElementById("finalModal").style.display = "flex";
     return;
   }
-  const topPicks = lanes.map(lane => lastResults.byLane[lane][0]);
-  let html = buildRoleCoverage(topPicks) + `<div class="final-summary">${buildFinalSummary(topPicks)}</div>`;
-  html += lanes.map(lane => {
+  let html = lanes.map(lane => {
     const r = lastResults.byLane[lane][0];
     const h = heroInfo(r.name) || {};
     const col = roleColor(h.role);
