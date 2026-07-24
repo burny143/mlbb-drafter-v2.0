@@ -46,10 +46,10 @@ if _dotenv.exists():
 GLOBAL_WEIGHTS_ROWS = (7, 16)          # Block 1
 ROLE_MATRIX_HEADER_ROW = 18            # Block 2 header (defender roles across)
 ROLE_MATRIX_DATA_ROWS = (19, 24)       # Block 2 data rows (attacker roles down)
-HARD_COUNTER_ROWS = (29, 128)          # Block 3
-STYLE_MATRIX_HEADER_ROW = 163          # Block 5 header (defender tags across)
-STYLE_MATRIX_DATA_ROWS = (164, 185)    # Block 5 data rows (attacker tags down)
-MANUAL_OVERRIDES_ROWS = (190, 1189)    # Block 6
+HARD_COUNTER_ROWS = (29, 130)          # Block 3
+STYLE_MATRIX_HEADER_ROW = 164          # Block 5 header (defender tags across)
+STYLE_MATRIX_DATA_ROWS = (165, 186)    # Block 5 data rows (attacker tags down)
+MANUAL_OVERRIDES_ROWS = (191, 1189)    # Block 6
 
 EXPECTED_HERO_COUNT = 133
 
