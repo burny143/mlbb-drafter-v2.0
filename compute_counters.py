@@ -212,8 +212,9 @@ def style_matchup(atk: dict, defn: dict, style_matrix: dict, style_mult: float) 
     return max(candidates) * style_mult
 
 
-def hard_counter_bonus(atk: dict, defn: dict, rules: list[dict]) -> float:
+def hard_counter_bonus(atk: dict, defn: dict, rules: list[dict]) -> tuple[float, list]:
     total = 0.0
+    matched_rules = []
     atk_name_lower = atk["name"].lower()
     for rule in rules:
         if rule["attacker"].lower() != atk_name_lower:
@@ -232,8 +233,17 @@ def hard_counter_bonus(atk: dict, defn: dict, rules: list[dict]) -> float:
         elif ctype == "Resource":
             matched = (defn["resource"] or "").lower() == cval.lower()
         if matched:
-            total += float(rule["bonus_to_attacker"]) - float(rule["penalty_to_defender"])
-    return total
+            bonus = float(rule["bonus_to_attacker"])
+            penalty = float(rule["penalty_to_defender"])
+            total += bonus - penalty
+            matched_rules.append({
+                "type": ctype,
+                "value": cval,
+                "bonus": bonus,
+                "penalty": penalty,
+                "note": rule.get("note") or "",
+            })
+    return total, matched_rules
 
 
 def compute_score(atk: dict, defn: dict, ref: dict) -> dict:
@@ -246,7 +256,7 @@ def compute_score(atk: dict, defn: dict, ref: dict) -> dict:
     dta = damage_type_advantage(atk, defn, weights)
     pst = power_spike_timing(atk, defn, weights["spike_mult"])
     sm = style_matchup(atk, defn, ref["style_matrix"], weights["style_mult"])
-    hcb = hard_counter_bonus(atk, defn, ref["hard_counter_rules"])
+    hcb, matched_rules = hard_counter_bonus(atk, defn, ref["hard_counter_rules"])
     rta = range_type_advantage(atk, defn, weights["rangetype_mult"])
     aha = antiheal_advantage(atk, defn, weights["antiheal_mult"])
 
@@ -265,6 +275,7 @@ def compute_score(atk: dict, defn: dict, ref: dict) -> dict:
         "power_spike_timing": pst,
         "style_matchup": sm,
         "hard_counter_bonus": hcb,
+        "matched_rules": matched_rules,
     }
 
 

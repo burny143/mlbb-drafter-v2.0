@@ -278,6 +278,138 @@
     color:var(--text-faint);
   }
 
+  /* ---------- final line-up modal ---------- */
+  .final-btn{
+    font-family:'Rajdhani',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:6px;
+    padding:5px 14px;
+    cursor:pointer;
+    transition:opacity .15s;
+  }
+  .final-btn:hover{ opacity:.8; }
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.65);
+    z-index:100;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .modal-panel{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    max-width:640px;
+    width:100%;
+    max-height:80vh;
+    display:flex;
+    flex-direction:column;
+    box-shadow:0 20px 60px rgba(0,0,0,0.6);
+  }
+  .modal-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:16px 20px;
+    border-bottom:1px solid var(--border);
+  }
+  .modal-title{
+    font-family:'Rajdhani',sans-serif;
+    font-weight:700;
+    font-size:20px;
+    text-transform:uppercase;
+    letter-spacing:0.02em;
+  }
+  .modal-close{
+    background:none;
+    border:none;
+    color:var(--text-dim);
+    font-size:18px;
+    cursor:pointer;
+    padding:0 4px;
+    line-height:1;
+  }
+  .modal-close:hover{ color:var(--text); }
+  .modal-body{
+    overflow-y:auto;
+    padding:12px 20px;
+    flex:1;
+  }
+  .modal-footer{
+    display:flex;
+    gap:10px;
+    justify-content:flex-end;
+    padding:12px 20px;
+    border-top:1px solid var(--border);
+  }
+  .modal-btn{
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    font-weight:500;
+    border:none;
+    border-radius:6px;
+    padding:7px 16px;
+    cursor:pointer;
+    transition:opacity .15s;
+  }
+  .modal-btn:hover{ opacity:.8; }
+  .modal-btn.primary{ background:var(--accent); color:#fff; }
+  .modal-btn.secondary{ background:var(--bg-panel-2); color:var(--text); }
+  .final-card{
+    display:flex;
+    gap:12px;
+    padding:12px 0;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .final-card:last-child{ border-bottom:none; }
+  .final-card-lane{
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--text-faint);
+    min-width:68px;
+    padding-top:2px;
+  }
+  .final-card-main{ flex:1; min-width:0; }
+  .final-card-hero{
+    font-weight:600;
+    font-size:15px;
+  }
+  .final-card-role{
+    font-size:10px;
+    color:var(--text-dim);
+    margin-left:6px;
+  }
+  .final-card-score{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    font-weight:700;
+    text-align:right;
+    min-width:50px;
+    white-space:nowrap;
+  }
+  .final-card-reasons{
+    margin-top:5px;
+  }
+  .final-reason{
+    font-size:10.5px;
+    line-height:1.45;
+    color:var(--text-dim);
+    padding:1px 0;
+  }
+  .final-reason b{ font-weight:600; color:var(--text); }
+  .final-reason .vs{ color:var(--text-faint); }
+
   /* ---------- results ---------- */
   .results-head{
     display:flex;
@@ -465,6 +597,19 @@
     text-align:right;
     font-weight:600;
   }
+  .bd-rules{
+    grid-column:1 / -1;
+    margin-top:4px;
+    padding:4px 0 2px 2px;
+    border-top:1px solid var(--border-soft);
+  }
+  .rule-line{
+    font-size:10px;
+    line-height:1.4;
+    color:var(--text-dim);
+    padding:1px 0;
+  }
+  .rule-line b{ font-weight:600; color:var(--text); }
 
   .agg-score{
     font-family:'JetBrains Mono',monospace;
@@ -546,10 +691,26 @@
   <div class="results-head">
     <div class="results-title">Best answers</div>
     <div class="results-count" id="resultsCount"></div>
+    <span style="flex:1"></span>
+    <button id="finalBtn" class="final-btn" style="display:none" onclick="openFinal()">Final Line-up ▸</button>
   </div>
 
   <div id="resultsArea">
     <div class="empty-state">Fill at least one enemy slot above.<br><strong>Top 5 overall</strong> plus <strong>top 5 per lane</strong> (30 heroes total) will rank here.</div>
+  </div>
+
+  <div id="finalModal" class="modal-overlay" style="display:none" onclick="closeFinal(event)">
+    <div class="modal-panel" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title">Final Line-up</span>
+        <button class="modal-close" onclick="closeFinal()">✕</button>
+      </div>
+      <div id="finalBody" class="modal-body"></div>
+      <div class="modal-footer">
+        <button class="modal-btn secondary" onclick="closeFinal()">Close</button>
+        <button class="modal-btn primary" onclick="clearAll()">Reselect</button>
+      </div>
+    </div>
   </div>
 
   <div class="status-bar" id="status">connecting…</div>
@@ -651,7 +812,7 @@ async function loadData(){
     while (true) {
       const { data: page, error: pageErr } = await client
         .from("counter_scores")
-        .select("attacker, defender, score")
+        .select("attacker, defender, score, matched_rules")
         .range(from, from + PAGE_SIZE - 1);
       if (pageErr) throw pageErr;
       scoreRows = scoreRows.concat(page);
@@ -661,7 +822,7 @@ async function loadData(){
 
     scoreMap.clear();
     for (const r of scoreRows){
-      scoreMap.set(r.attacker + "|" + r.defender, r.score);
+      scoreMap.set(r.attacker + "|" + r.defender, { score: r.score, matched_rules: r.matched_rules || [] });
     }
 
     rowCountEl.textContent = heroes.length + " heroes · " + scoreRows.length + " matchups loaded";
@@ -803,7 +964,11 @@ const BAR_SCALE = 120; // score magnitude that fills half the bar track
 
 function getScore(attacker, defender){
   const v = scoreMap.get(attacker + "|" + defender);
-  return typeof v === "number" ? v : 0;
+  return v ? v.score : 0;
+}
+function getMatchedRules(attacker, defender){
+  const v = scoreMap.get(attacker + "|" + defender);
+  return v ? v.matched_rules : [];
 }
 
 function computeResults(){
@@ -816,7 +981,8 @@ function computeResults(){
   const rows = candidates.map(name => {
     const breakdown = filled.map(enemy => ({
       enemy,
-      score: getScore(name, enemy)
+      score: getScore(name, enemy),
+      matched_rules: getMatchedRules(name, enemy)
     }));
     const total = breakdown.reduce((a,b)=>a+b.score, 0);
     const agg = mode === "avg" ? total / filled.length : total;
@@ -846,9 +1012,28 @@ function scoreClass(v){
   return "neu";
 }
 
+function explainRule(rule){
+  const val = escapeHtml(rule.value);
+  const note = escapeHtml(rule.note);
+  switch(rule.type){
+    case "Hero":    return `Direct counter to <b>${val}</b> — ${note}`;
+    case "Tag":     return `Strong against <b>${val}</b> heroes — ${note}`;
+    case "Role":    return `Effective against <b>${val}</b> role — ${note}`;
+    case "DamageType": return `Exploits <b>${val}</b> damage type — ${note}`;
+    case "Resource":   return `Pressures <b>${val}</b>-dependent heroes — ${note}`;
+    default: return note;
+  }
+}
+
 function cardHTML(r, idx, isTop){
   const h = heroInfo(r.name) || {};
   const col = roleColor(h.role);
+  function ruleExplanation(b){
+    if (!b.matched_rules || b.matched_rules.length === 0) return "";
+    const lines = b.matched_rules.map(r => `<div class="rule-line">• ${explainRule(r)}</div>`).join("");
+    return `<div class="bd-rules">${lines}</div>`;
+  }
+
   const bdRows = r.breakdown.map(b => {
     const pct = Math.max(-50, Math.min(50, (b.score / BAR_SCALE) * 50));
     const cls = scoreClass(b.score);
@@ -862,6 +1047,7 @@ function cardHTML(r, idx, isTop){
           <div class="bd-fill" style="left:${left}; width:${width}; background:${barColor};"></div>
         </div>
         <div class="bd-score ${cls}">${b.score > 0 ? "+" : ""}${b.score.toFixed(0)}</div>
+        ${ruleExplanation(b)}
       </div>`;
   }).join("");
 
@@ -909,16 +1095,19 @@ function renderLaneSection(){
 
 function renderResults(){
   const filled = slots.filter(Boolean);
+  const finalBtn = document.getElementById("finalBtn");
   if (filled.length === 0){
     resultsArea.innerHTML = `<div class="empty-state">Fill at least one enemy slot above.<br><strong>Top 5 overall</strong> plus <strong>top 5 per lane</strong> (30 heroes total) will rank here.</div>`;
     resultsCount.textContent = "";
     lastResults = null;
+    if (finalBtn) finalBtn.style.display = "none";
     return;
   }
 
   const results = computeResults();
   lastResults = results;
   resultsCount.textContent = `vs ${filled.length} pick${filled.length>1?"s":""} · ${mode === "sum" ? "summed" : "averaged"}`;
+  if (finalBtn) finalBtn.style.display = "inline-block";
 
   if (!activeLaneTab && LANES.length) activeLaneTab = LANES[0];
 
@@ -942,11 +1131,72 @@ function renderResults(){
   renderLaneSection();
 }
 
-function escapeHtml(s){
-  return String(s ?? "").replace(/[&<>"']/g, c => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
-  }[c]));
+function openFinal(){
+  if (!lastResults) return;
+  const body = document.getElementById("finalBody");
+  const lanes = LANES.filter(l => lastResults.byLane[l] && lastResults.byLane[l].length > 0);
+  if (lanes.length === 0){
+    body.innerHTML = `<div class="empty-state">No lane-eligible counters found. Fill more enemy slots.</div>`;
+    document.getElementById("finalModal").style.display = "flex";
+    return;
+  }
+  let html = lanes.map(lane => {
+    const r = lastResults.byLane[lane][0];
+    const h = heroInfo(r.name) || {};
+    const col = roleColor(h.role);
+    // Collate explanations from every enemy matchup
+    const reasons = r.breakdown
+      .filter(b => b.matched_rules && b.matched_rules.length > 0)
+      .flatMap(b => b.matched_rules.map(rule => {
+        const val = escapeHtml(rule.value);
+        const note = escapeHtml(rule.note);
+        const net = (rule.bonus || 0) - (rule.penalty || 0);
+        const sign = net >= 0 ? "+" : "";
+        let tpl = "";
+        switch(rule.type){
+          case "Hero":    tpl = `Direct counter to <b>${val}</b>`; break;
+          case "Tag":     tpl = `Strong against <b>${val}</b> heroes`; break;
+          case "Role":    tpl = `Effective against <b>${val}</b> role`; break;
+          case "DamageType": tpl = `Exploits <b>${val}</b> damage type`; break;
+          case "Resource":   tpl = `Pressures <b>${val}</b>-dependent heroes`; break;
+          default: tpl = note;
+        }
+        return `<div class="final-reason"><span class="vs">vs ${escapeHtml(b.enemy)}</span> — ${tpl} <span class="vs">(${sign}${net})</span></div>`;
+      }));
+    // Add a generic lane-fit note if no rule-based reasons
+    if (reasons.length === 0){
+      reasons.push(`<div class="final-reason"><span class="vs">Recommended for ${escapeHtml(lane)} role based on aggregate scores.</span></div>`);
+    }
+    return `
+      <div class="final-card">
+        <div class="final-card-lane">${escapeHtml(lane)}</div>
+        <div class="final-card-main">
+          <div>
+            <span class="final-card-hero" style="color:${col}">${escapeHtml(r.name)}</span>
+            <span class="final-card-role">${escapeHtml(h.role || "")}${h.role2 ? " / " + escapeHtml(h.role2) : ""}</span>
+          </div>
+          <div class="final-card-reasons">${reasons.join("")}</div>
+        </div>
+        <div class="final-card-score ${scoreClass(r.agg)}">${r.agg > 0 ? "+" : ""}${r.agg.toFixed(1)}</div>
+      </div>`;
+  }).join("");
+  body.innerHTML = html;
+  document.getElementById("finalModal").style.display = "flex";
 }
+
+function closeFinal(e){
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById("finalModal").style.display = "none";
+}
+
+function clearAll(){
+  closeFinal();
+  for (let i = 0; i < slots.length; i++) slots[i] = null;
+  renderSlots();
+  renderResults();
+}
+
+function escapeHtml(s){
 
 // ------------------------------------------------------------
 // boot

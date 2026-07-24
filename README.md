@@ -206,9 +206,9 @@ Seven tables defined in `schema.sql`:
 | `style_matrix` | 22×22 style/tag interaction grid | `(attacker_tag, defender_tag)` (PK) |
 | `hard_counter_rules` | Special-case counter rule triggers | `id` (serial PK) |
 | `manual_overrides` | Forced exact scores for specific pairs | `(attacker, defender)` (PK) |
-| `counter_scores` | Precomputed per-pair scores (populated by compute job) | `(attacker, defender)` (PK) |
+| `counter_scores` | Precomputed per-pair scores with component breakdown and matched rule explanations (populated by compute job) | `(attacker, defender)` (PK) |
 
-`counter_scores` includes indexes on `defender` and `score DESC` for fast lookup.
+`counter_scores` includes a `matched_rules` JSONB column with the list of hard-counter rules that fired for the pair (type, value, bonus, penalty, note), and indexes on `defender` and `score DESC` for fast lookup.
 
 ---
 

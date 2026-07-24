@@ -114,6 +114,7 @@ create table if not exists counter_scores (
     power_spike_timing    numeric not null,
     style_matchup         numeric not null,
     hard_counter_bonus    numeric not null,
+    matched_rules         jsonb default '[]'::jsonb,
     computed_at           timestamptz not null default now(),
     primary key (attacker, defender)
 );
