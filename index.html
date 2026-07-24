@@ -201,6 +201,13 @@
     text-transform:uppercase;
     color:var(--role-col,var(--text-dim));
   }
+  .hex-lane{
+    font-weight:700;
+    font-size:9px;
+    letter-spacing:0.04em;
+    color:var(--accent);
+    margin-top:1px;
+  }
   .hex-clear{
     position:absolute;
     bottom:6px;
@@ -920,11 +927,13 @@ function renderSlots(){
     if (name){
       const h = heroInfo(name) || {};
       const col = roleColor(h.role);
+      const laneStr = [h.lane1, h.lane2].filter(Boolean).join(" / ");
       slotDiv.innerHTML = `
         <div class="hex filled" style="--role-col:${col}">
           <span class="hex-slotnum">P${i+1}</span>
           <div class="hex-name">${escapeHtml(name)}</div>
           <div class="hex-role" style="--role-col:${col}">${escapeHtml(h.role || "")}</div>
+          <div class="hex-lane">${escapeHtml(laneStr)}</div>
           <button class="hex-clear" data-clear="${i}">clear</button>
         </div>`;
       slotDiv.querySelector(".hex-clear").addEventListener("click", (e)=>{
