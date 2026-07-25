@@ -1526,7 +1526,7 @@ async function loadData(){
     statusEl.textContent = "loading heroes…";
     const { data: heroRows, error: heroErr } = await client
       .from("heroes")
-      .select("name, role, role2, lane1, lane2, damage_type, style1, style2, has_antiheal, spike_order, teamfight_contribution")
+      .select("name, role, role2, lane1, lane2, damage_type, style1, style2, has_antiheal, spike_order")
       .order("name");
     if (heroErr) throw heroErr;
     heroes = heroRows;
@@ -2163,9 +2163,6 @@ function fa_decidingFactor(totalA, totalB, aBreak, bBreak, winnerTeam, aNames, b
     roleAdv.diff < -3 ? ` Team B's <strong>role composition</strong> counters Team A's classes (+${(-roleAdv.diff).toFixed(0)}).` : "";
   const tfEdge = tfA > tfB + 4 ? ` Team A's <strong>teamfight potential</strong> (+${(tfA - tfB).toFixed(0)}) makes them more dangerous in 5v5 clustered fights.` :
     tfB > tfA + 4 ? ` Team B has better <strong>teamfight composition</strong> (+${(tfB - tfA).toFixed(0)}), favoring them in clustered engagements.` : "";
-  const avgA = aBreak.length ? totalA / aBreak.length : 0;
-  const avgB = bBreak.length ? totalB / bBreak.length : 0;
-  const diff = totalA - totalB;
 
   // Count matchups from A→B direction only (25 unique pairs for 5v5)
   let winsA = 0, winsB = 0, ties = 0;
