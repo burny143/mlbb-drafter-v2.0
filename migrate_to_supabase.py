@@ -99,6 +99,7 @@ def extract_heroes(wb) -> list[dict]:
         for col in ("offense", "ability_effects", "durability", "difficulty", "spike_order"):
             rec[col] = int(rec[col])
         rec["has_antiheal"] = to_bool_yes_no(rec.get("has_antiheal"))
+        rec["has_true_damage"] = to_bool_yes_no(rec.get("has_true_damage"))
         for col in ("role2", "style2", "lane2"):
             rec[col] = clean(rec.get(col))
         for col in ("name", "role", "style1", "damage_type", "range_type",

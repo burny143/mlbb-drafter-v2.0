@@ -25,37 +25,41 @@ Component definitions:
             role_matrix[atk.role2 -> def.role])   (skip atk.role2 if null)
         * role_mult
 
-    Stat
-        ((atk.offense + atk.ability_effects) / 2 - def.durability) * burst_mult
+    Stat (damage + survivability)
+        damage_score  = ((atk.offense + atk.ability_effects) / 2 - def.durability) * burst_mult
+        surv_score    = (atk.durability - (def.offense + def.ability_effects) / 2) * burst_mult * 0.3
 
     Difficulty Gap
         gap = atk.difficulty - def.difficulty
-        gap * diff_mult   if gap > 20
-        0                 otherwise
+        sigmoid weight = 1/(1 + e^(-0.15*(gap-10)))
+        gap * weight * diff_mult
 
     Damage Type Advantage
         dmgtype_mixed   if atk.damage_type == "Mixed"
         dmgtype_same    elif atk.damage_type == def.damage_type
         dmgtype_diff    else
+        + TRUE_DAMAGE_BONUS (2.0) if atk.has_true_damage
 
     Power Spike Timing
-        (atk.spike_order - def.spike_order) * spike_mult
+        Categorical 3×3 matrix (Early/Mid/Late bands):
+          Early vs Late = +8, Late vs Early = -6
+          Mid vs Late = +4, Late vs Mid = -2
+        + fine_tune = (spike_order_diff) * 0.5
 
     Style Matchup
-        MAX over up to 4 lookups of
+        (best * 0.6 + avg(rest) * 0.4) over up to 4 lookups of
             style_matrix[(atk.style1 or atk.style2)][(def.style1 or def.style2)]
         * style_mult
-        (only combinations where both tags are non-null are considered)
 
     Hard Counter Bonus
-        sum of (bonus_to_attacker - penalty_to_defender) for every row in
-        hard_counter_rules where rule.attacker == atk.name AND:
-          - condition_type == "Tag"        AND def.style1/style2 == condition_value
-          - condition_type == "Hero"       AND def.name == condition_value
-          - condition_type == "Role"       AND def.role/role2 == condition_value
-          - condition_type == "DamageType" AND def.damage_type == condition_value
-          - condition_type == "Resource"   AND def.resource == condition_value
-        (multiple matching rules stack)
+        sum of (bonus_to_attacker - penalty_to_defender) for every matching
+        hard_counter_rule (case-insensitive match via .lower())
+
+    Range Type Advantage
+        rangetype_mult   if atk has mobility tag AND def.range_type == "Ranged"
+
+    Anti-Heal Advantage
+        antiheal_mult    if atk.has_antiheal AND def has Sustain/Heal tag
 
 Usage:
     export SUPABASE_URL="https://xxxx.supabase.co"
@@ -65,6 +69,7 @@ Usage:
 """
 
 import argparse
+import math
 import os
 import sys
 from pathlib import Path
@@ -80,6 +85,20 @@ if _dotenv.exists():
         if _line and not _line.startswith("#") and "=" in _line:
             _k, _v = _line.split("=", 1)
             os.environ.setdefault(_k.strip(), _v.strip())
+
+# Power Spike categorical bands
+SPIKE_BANDS = {1: "Early", 2: "Early", 3: "Mid", 4: "Mid", 5: "Late"}
+
+SPIKE_MATRIX = {
+    ("Early","Early"): 0,   ("Early","Mid"):   4,
+    ("Early","Late"):  8,   ("Mid","Early"):  -2,
+    ("Mid","Mid"):     0,   ("Mid","Late"):    4,
+    ("Late","Early"): -6,   ("Late","Mid"):   -2,
+    ("Late","Late"):   0,
+}
+
+TRUE_DAMAGE_BONUS = 2.0
+SURVIVABILITY_WEIGHT = 0.3
 
 CHUNK_SIZE = 500
 PAGE_SIZE = 1000  # supabase-py / PostgREST default row cap per request
@@ -178,24 +197,35 @@ def role_advantage(atk: dict, defn: dict, role_matrix: dict, role_mult: float) -
 
 
 def stat_component(atk: dict, defn: dict, burst_mult: float) -> float:
-    return ((atk["offense"] + atk["ability_effects"]) / 2 - defn["durability"]) * burst_mult
+    damage_score = ((atk["offense"] + atk["ability_effects"]) / 2 - defn["durability"]) * burst_mult
+    surv_score = (atk["durability"] - (defn["offense"] + defn["ability_effects"]) / 2) * burst_mult * SURVIVABILITY_WEIGHT
+    return damage_score + surv_score
 
 
 def difficulty_gap(atk: dict, defn: dict, diff_mult: float) -> float:
     gap = atk["difficulty"] - defn["difficulty"]
-    return gap * diff_mult if gap > 20 else 0.0
+    weight = 1.0 / (1.0 + math.exp(-0.15 * (gap - 10)))
+    return gap * weight * diff_mult
 
 
 def damage_type_advantage(atk: dict, defn: dict, weights: dict) -> float:
     if atk["damage_type"] == "Mixed":
-        return weights["dmgtype_mixed"]
-    if atk["damage_type"] == defn["damage_type"]:
-        return weights["dmgtype_same"]
-    return weights["dmgtype_diff"]
+        base = weights["dmgtype_mixed"]
+    elif atk["damage_type"] == defn["damage_type"]:
+        base = weights["dmgtype_same"]
+    else:
+        base = weights["dmgtype_diff"]
+    if atk.get("has_true_damage"):
+        base += TRUE_DAMAGE_BONUS
+    return base
 
 
 def power_spike_timing(atk: dict, defn: dict, spike_mult: float) -> float:
-    return (atk["spike_order"] - defn["spike_order"]) * spike_mult
+    a_band = SPIKE_BANDS.get(atk["spike_order"], "Mid")
+    d_band = SPIKE_BANDS.get(defn["spike_order"], "Mid")
+    base = SPIKE_MATRIX.get((a_band, d_band), 0)
+    fine_tune = (atk["spike_order"] - defn["spike_order"]) * 0.5
+    return (base + fine_tune) * spike_mult
 
 
 def style_matchup(atk: dict, defn: dict, style_matrix: dict, style_mult: float) -> float:
@@ -209,7 +239,12 @@ def style_matchup(atk: dict, defn: dict, style_matrix: dict, style_mult: float) 
                 candidates.append(v)
     if not candidates:
         return 0.0
-    return max(candidates) * style_mult
+    candidates.sort(reverse=True)
+    if len(candidates) <= 1:
+        return candidates[0] * style_mult
+    best = candidates[0]
+    rest_avg = sum(candidates[1:]) / len(candidates[1:])
+    return (best * 0.6 + rest_avg * 0.4) * style_mult
 
 
 def hard_counter_bonus(atk: dict, defn: dict, rules: list[dict]) -> tuple[float, list]:
@@ -275,6 +310,8 @@ def compute_score(atk: dict, defn: dict, ref: dict) -> dict:
         "power_spike_timing": pst,
         "style_matchup": sm,
         "hard_counter_bonus": hcb,
+        "range_type_adv": rta,
+        "antiheal_adv": aha,
         "matched_rules": matched_rules,
     }
 
@@ -312,7 +349,8 @@ def print_preview(records: list[dict], n: int = 10) -> None:
     print(f"\n--- DRY RUN: first {min(n, len(records))} of {len(records)} computed rows ---")
     cols = ["attacker", "defender", "score", "role_advantage", "stat",
             "difficulty_gap", "damage_type_adv", "power_spike_timing",
-            "style_matchup", "hard_counter_bonus"]
+            "style_matchup", "hard_counter_bonus", "range_type_adv",
+            "antiheal_adv"]
     for r in records[:n]:
         print({c: round(r[c], 3) if isinstance(r[c], float) else r[c] for c in cols})
 

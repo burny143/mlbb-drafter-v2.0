@@ -27,7 +27,8 @@ create table if not exists heroes (
     power_spike      text not null,
     resource         text not null,
     spike_order      int not null,
-    has_antiheal     boolean not null default false
+    has_antiheal     boolean not null default false,
+    has_true_damage  boolean not null default false
 );
 
 comment on table heroes is 'One row per MLBB hero: base stats, roles, tags/lanes. Source: Heroes sheet.';
@@ -114,6 +115,8 @@ create table if not exists counter_scores (
     power_spike_timing    numeric not null,
     style_matchup         numeric not null,
     hard_counter_bonus    numeric not null,
+    range_type_adv        numeric not null default 0,
+    antiheal_adv          numeric not null default 0,
     matched_rules         jsonb default '[]'::jsonb,
     computed_at           timestamptz not null default now(),
     primary key (attacker, defender)
