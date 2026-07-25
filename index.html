@@ -871,6 +871,225 @@
     text-align:right;
   }
 
+  /* ---------- fight analysis ---------- */
+  .fight-analysis{
+    margin-top:16px;
+    animation:fadeIn .4s ease both;
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:20px 22px;
+  }
+  .fa-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-family:'Rajdhani',sans-serif;
+    font-weight:700;
+    font-size:16px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    margin-bottom:16px;
+  }
+  .fa-badge .fa-winner{
+    background:var(--gold);
+    color:#0C0F14;
+    padding:2px 10px;
+    border-radius:5px;
+    font-size:12px;
+    letter-spacing:0.1em;
+  }
+  .fa-badge .fa-gap{
+    color:var(--text-faint);
+    font-weight:500;
+    font-size:13px;
+  }
+  .fa-summary{
+    font-size:13px;
+    line-height:1.65;
+    color:var(--text-dim);
+    margin-bottom:20px;
+    padding-bottom:16px;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .fa-summary strong{ color:var(--text); font-weight:600; }
+
+  .fa-compare{
+    display:grid;
+    grid-template-columns:1fr auto 1fr;
+    gap:16px;
+    margin-bottom:20px;
+  }
+  .fa-block{
+    background:var(--bg-panel-2);
+    border-radius:10px;
+    padding:14px 16px;
+  }
+  .fa-block-title{
+    font-family:'JetBrains Mono',monospace;
+    font-size:8.5px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--text-faint);
+    margin-bottom:8px;
+  }
+  .fa-block-row{
+    font-size:12px;
+    line-height:1.6;
+    color:var(--text-dim);
+    padding:1px 0;
+  }
+  .fa-block-row strong{ color:var(--text); font-weight:600; }
+  .fa-block-row .tag{
+    display:inline-block;
+    font-size:10px;
+    padding:0 7px;
+    border-radius:4px;
+    background:rgba(255,255,255,0.06);
+    color:var(--text-dim);
+    margin:1px 2px;
+  }
+  .fa-block-row .tag.have{ background:rgba(212,169,78,0.12); color:var(--gold); }
+  .fa-vs-badge{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Rajdhani',sans-serif;
+    font-weight:700;
+    font-size:16px;
+    color:var(--text-faint);
+    letter-spacing:0.06em;
+    padding:0 4px;
+  }
+
+  .fa-section{
+    margin-top:18px;
+    padding-top:16px;
+    border-top:1px solid var(--border-soft);
+  }
+  .fa-section-title{
+    font-family:'Rajdhani',sans-serif;
+    font-weight:700;
+    font-size:14px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--gold);
+    margin-bottom:12px;
+  }
+
+  .fa-mu-grid{
+    display:grid;
+    grid-template-columns:1fr auto 1fr;
+    gap:10px;
+    align-items:center;
+  }
+  .fa-mu-grid + .fa-mu-grid{ margin-top:8px; }
+  .fa-mu-hero{ font-weight:600; font-size:12.5px; }
+  .fa-mu-hero .mu-lane{ font-weight:400; font-size:9.5px; color:var(--text-faint); margin-left:4px; }
+  .fa-mu-hero.a{ text-align:right; color:var(--role-tank); }
+  .fa-mu-hero.b{ text-align:left; color:var(--crimson); }
+  .fa-mu-bar{
+    position:relative;
+    height:8px;
+    width:100px;
+    background:var(--bg-slot);
+    border-radius:4px;
+    overflow:hidden;
+    flex-shrink:0;
+  }
+  .fa-mu-fill{
+    position:absolute;
+    top:0;bottom:0;
+    border-radius:4px;
+    transition:width .5s ease;
+  }
+  .fa-mu-fill.a{ right:50%; background:var(--role-tank); }
+  .fa-mu-fill.b{ left:50%; background:var(--crimson); }
+  .fa-mu-score{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    font-weight:600;
+    min-width:44px;
+    text-align:center;
+  }
+  .fa-mu-score.a-win{ color:var(--role-tank); }
+  .fa-mu-score.b-win{ color:var(--crimson); }
+  .fa-mu-score.tie{ color:var(--text-faint); }
+
+  .fa-rules-list{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .fa-rule-item{
+    font-size:11.5px;
+    line-height:1.5;
+    color:var(--text-dim);
+    padding:6px 10px;
+    background:var(--bg-panel-2);
+    border-radius:6px;
+    border-left:2px solid var(--gold);
+  }
+  .fa-rule-item .who{ font-weight:600; color:var(--text); }
+  .fa-rule-item .vs{ color:var(--text-faint); }
+  .fa-rule-item .net{ font-family:'JetBrains Mono',monospace; font-size:10px; }
+  .fa-rule-item.a-team{ border-left-color:var(--role-tank); }
+  .fa-rule-item.b-team{ border-left-color:var(--crimson); }
+
+  .fa-impact{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .fa-impact-card{
+    background:var(--bg-panel-2);
+    border-radius:8px;
+    padding:10px 12px;
+  }
+  .fa-impact-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:8.5px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--text-faint);
+    margin-bottom:4px;
+  }
+  .fa-impact-name{
+    font-weight:700;
+    font-size:15px;
+  }
+  .fa-impact-score{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    font-weight:600;
+    margin-top:2px;
+  }
+  .fa-impact-reason{
+    font-size:11px;
+    color:var(--text-dim);
+    margin-top:4px;
+    line-height:1.45;
+  }
+  .fa-impact-card.mvp{ border-left:2px solid var(--gold); }
+  .fa-impact-card.weak{ border-left:2px solid var(--crimson); }
+
+  .fa-deciding-text{
+    font-size:12.5px;
+    line-height:1.65;
+    color:var(--text-dim);
+    padding:8px 12px;
+    background:var(--bg-panel-2);
+    border-radius:8px;
+  }
+  .fa-deciding-text strong{ color:var(--text); font-weight:600; }
+
+  @media (max-width:720px){
+    .fa-compare{ grid-template-columns:1fr; }
+    .fa-vs-badge{ padding:4px 0; }
+    .fa-impact{ grid-template-columns:1fr; }
+    .fa-mu-grid{ grid-template-columns:1fr auto 1fr; gap:8px; }
+  }
+
   /* ---------- narrative summaries ---------- */
   .quick-take{
     background:var(--bg-panel-2);
@@ -1017,7 +1236,9 @@
 
     <div class="fight-actions">
       <button id="fightBtn" class="fight-btn">⚔ Fight ⚔</button>
-      <button id="clearFightBtn" class="fight-clear-btn">Clear teams</button>
+      <button id="clearTeamABtn" class="fight-clear-btn" style="border-color:var(--role-tank);color:var(--role-tank)">Clear Team A</button>
+      <button id="clearTeamBBtn" class="fight-clear-btn" style="border-color:var(--crimson);color:var(--crimson)">Clear Team B</button>
+      <button id="clearFightBtn" class="fight-clear-btn">Clear All</button>
     </div>
 
     <div id="fightResults">
@@ -1118,7 +1339,7 @@ async function loadData(){
     statusEl.textContent = "loading heroes…";
     const { data: heroRows, error: heroErr } = await client
       .from("heroes")
-      .select("name, role, role2, lane1, lane2")
+      .select("name, role, role2, lane1, lane2, damage_type, style1, style2, has_antiheal, has_mobility")
       .order("name");
     if (heroErr) throw heroErr;
     heroes = heroRows;
@@ -1324,11 +1545,13 @@ function renderTeamSlots(team){
         renderTeamSlots(team);
       });
     } else {
+      const lanelbl = LANES[i] || "";
       slotDiv.innerHTML = `
-        <div class="hex" data-open="${i}">
+        <div class="hex" data-open="${i}" title="${lanelbl ? "Suggested: " + lanelbl : ""}">
           <span class="hex-slotnum">${team}${i+1}</span>
           <div class="hex-plus">+</div>
-          <div class="hex-empty-label">Pick Hero</div>
+          <div class="hex-empty-label">${lanelbl ? escapeHtml(lanelbl) : "Pick Hero"}</div>
+          <div class="hex-flex-note">${lanelbl ? "any hero" : ""}</div>
         </div>
         <div class="search-pop" id="pop-fight-${team}-${i}">
           <input type="text" placeholder="Search hero…" autocomplete="off">
@@ -1394,6 +1617,15 @@ function renderTeamSearchList(team, i, query){
   });
 }
 
+function clearFightTeam(team){
+  const arr = team === "A" ? teamA : teamB;
+  for (let i = 0; i < arr.length; i++) arr[i] = null;
+  renderTeamSlots(team);
+}
+
+document.getElementById("clearTeamABtn").addEventListener("click", () => clearFightTeam("A"));
+document.getElementById("clearTeamBBtn").addEventListener("click", () => clearFightTeam("B"));
+
 document.getElementById("clearFightBtn").addEventListener("click", () => {
   teamA = [null,null,null,null,null];
   teamB = [null,null,null,null,null];
@@ -1430,6 +1662,271 @@ function fightRosterHTML(list, label, isWinner){
       <div class="fight-team-label">${escapeHtml(label)}${isWinner ? " · MVP side" : ""}</div>
       ${list.map(fightHeroRow).join("")}
     </div>`;
+}
+
+// ------------------------------------------------------------
+// fight analysis — template-based AI-like breakdown
+// ------------------------------------------------------------
+function fa_roleList(names){
+  return names.map(n => { const h = heroInfo(n); return h ? h.role : null; }).filter(Boolean);
+}
+
+function fa_allRoles(names){
+  return [...new Set(fa_roleList(names))];
+}
+
+function fa_damageMix(names){
+  const types = [...new Set(names.map(n => { const h = heroInfo(n); return h ? h.damage_type : null; }).filter(Boolean))];
+  if (types.length === 0) return { label: "Unknown", mixed: false };
+  if (types.length > 1) return { label: `Mixed (${types.join(" + ")})`, mixed: true };
+  return { label: types[0], mixed: false };
+}
+
+function fa_spikeDesc(names){
+  const spikes = names.map(n => { const h = heroInfo(n); return h ? h.spike_order : null; }).filter(v => v !== null && v !== undefined);
+  if (!spikes.length) return "Unknown";
+  const avg = spikes.reduce((a,b)=>a+b,0) / spikes.length;
+  if (avg < 3) return "Early game weighted";
+  if (avg < 5) return "Mid game weighted";
+  return "Late game scaled";
+}
+
+function fa_mobilityTag(names){
+  return names.some(n => { const h = heroInfo(n); return h && h.has_mobility; });
+}
+
+function fa_antihealTag(names){
+  return names.some(n => { const h = heroInfo(n); return h && h.has_antiheal; });
+}
+
+function fa_compositionBlurb(names, label){
+  const roles = fa_roleList(names);
+  const dmg = fa_damageMix(names);
+  const spike = fa_spikeDesc(names);
+  const mobile = fa_mobilityTag(names);
+  const antiheal = fa_antihealTag(names);
+  let lines = [];
+  lines.push(`Roles: <strong>${roles.join("</strong> · <strong>")}</strong>`);
+  if (dmg.mixed) lines.push(`Damage: <strong>${dmg.label}</strong> — hard for one tank to itemize against`);
+  else lines.push(`Damage: <strong>${dmg.label}</strong>`);
+  lines.push(`Timing: <strong>${spike}</strong>`);
+  if (mobile) lines.push(`Mobility: <strong>Present</strong> — dive/rotate threat`);
+  if (antiheal) lines.push(`Anti-heal: <strong>Available</strong> — pressures sustain compositions`);
+  return lines.map(l => `<div class="fa-block-row">${l}</div>`).join("");
+}
+
+function fa_compSectionHTML(teamA, teamB){
+  return `
+    <div class="fa-compare">
+      <div class="fa-block">
+        <div class="fa-block-title">Team A Composition</div>
+        ${fa_compositionBlurb(teamA, "A")}
+      </div>
+      <div class="fa-vs-badge">VS</div>
+      <div class="fa-block">
+        <div class="fa-block-title">Team B Composition</div>
+        ${fa_compositionBlurb(teamB, "B")}
+      </div>
+    </div>`;
+}
+
+function fa_matchupRows(a, b, aBreak, bBreak){
+  const len = Math.max(a.length, b.length);
+  let rows = "";
+  for (let i = 0; i < len; i++){
+    const hA = a[i] ? heroInfo(a[i]) : null;
+    const hB = b[i] ? heroInfo(b[i]) : null;
+    if (!hA && !hB) continue;
+
+    // Get total scores for each hero in this slot
+    const aTot = aBreak.find(x => x.name === a[i])?.total || 0;
+    const bTot = bBreak.find(x => x.name === b[i])?.total || 0;
+    const diff = aTot - bTot;
+    const absDiff = Math.abs(diff);
+    const maxTot = Math.max(Math.abs(aTot), Math.abs(bTot), 1);
+    const aPct = Math.min(46, Math.max(0, (aTot / maxTot) * 40 + 4));
+    const bPct = Math.min(46, Math.max(0, (bTot / maxTot) * 40 + 4));
+    const laneLabel = LANES[i] || `Slot ${i+1}`;
+    const winnerCls = absDiff < 0.5 ? "tie" : (diff > 0 ? "a-win" : "b-win");
+    const scoreDisp = absDiff < 0.5 ? "even" : `${diff > 0 ? "+" : ""}${diff.toFixed(1)}`;
+
+    rows += `<div class="fa-mu-grid">
+      <div class="fa-mu-hero a">${hA ? escapeHtml(hA.name) : "<span class='tag'>Empty</span>"} <span class="mu-lane">${hA ? escapeHtml(hA.role || "") : ""}</span></div>
+      <div class="fa-mu-bar" style="width:80px">
+        <div class="fa-mu-fill a" style="width:${aPct}%"></div>
+        <div class="fa-mu-fill b" style="width:${bPct}%"></div>
+      </div>
+      <div class="fa-mu-hero b">${hB ? escapeHtml(hB.name) : "<span class='tag'>Empty</span>"} <span class="mu-lane">${hB ? escapeHtml(hB.role || "") : ""}</span></div>
+      <div class="fa-mu-score ${winnerCls}" style="grid-column:2">${scoreDisp}</div>
+    </div>`;
+  }
+  return `<div class="fa-section">
+    <div class="fa-section-title">Matchup Scoreboard — by position</div>
+    ${rows || `<div class="fa-block-row" style="color:var(--text-faint)">No aligned matchups to display.</div>`}
+  </div>`;
+}
+
+function fa_ruleTemplate(r, attacker, defender, team){
+  const val = escapeHtml(r.value || "");
+  const note = escapeHtml(r.note || "");
+  const net = (r.bonus || 0) - (r.penalty || 0);
+  const sign = net >= 0 ? "+" : "";
+  const teamCls = team === "A" ? "a-team" : "b-team";
+  return `<div class="fa-rule-item ${teamCls}"><span class="who">${escapeHtml(attacker)}</span> <span class="vs">vs</span> <span class="who">${escapeHtml(defender)}</span> — ${note} <span class="vs">(net ${sign}${net})</span></div>`;
+}
+
+function fa_rulesSection(aBreak, bBreak){
+  const all = [];
+  aBreak.forEach(x => {
+    (x.vs || []).forEach(v => {
+      (v.matched_rules || []).forEach(r => all.push({ ...r, attacker: x.name, defender: v.defender, team: "A" }));
+    });
+  });
+  bBreak.forEach(x => {
+    (x.vs || []).forEach(v => {
+      (v.matched_rules || []).forEach(r => all.push({ ...r, attacker: x.name, defender: v.defender, team: "B" }));
+    });
+  });
+  if (!all.length) return "";
+  // Deduplicate by attacker+defender+type+value to avoid repeating the same rule
+  const seen = new Set();
+  const unique = all.filter(r => {
+    const k = r.attacker + "|" + r.defender + "|" + r.type + "|" + r.value;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+  // Limit to most impactful
+  const top = unique.sort((a,b) => Math.abs((b.bonus||0)-(b.penalty||0)) - Math.abs((a.bonus||0)-(a.penalty||0))).slice(0, 6);
+  return `<div class="fa-section">
+    <div class="fa-section-title">Key Counter Interactions (${top.length})</div>
+    <div class="fa-rules-list">${top.map(r => fa_ruleTemplate(r, r.attacker, r.defender, r.team)).join("")}</div>
+  </div>`;
+}
+
+function fa_impactSection(aBreak, bBreak, winnerTeam){
+  const sortedA = [...aBreak].sort((x,y) => y.total - x.total);
+  const sortedB = [...bBreak].sort((x,y) => y.total - x.total);
+  const allSorted = [...sortedA, ...sortedB].sort((x,y) => y.total - x.total);
+  const best = allSorted[0];
+  const worst = allSorted[allSorted.length - 1];
+  if (!best) return "";
+
+  const bestH = heroInfo(best.name);
+  const worstH = worst ? heroInfo(worst.name) : null;
+
+  // Generate "reason" for each
+  const bestVs = best.vs ? best.vs.filter(v => v.score > 0) : [];
+  const bestDom = bestVs.sort((a,b) => b.score - a.score).slice(0, 2).map(v => escapeHtml(v.defender));
+  const bestReason = bestDom.length ? `Dominates <strong>${bestDom.join("</strong>, <strong>")}</strong> with strong counter matchups.` : `Consistent positive contribution across the board.`;
+
+  let html = `<div class="fa-section">
+    <div class="fa-section-title">Impact Ratings</div>
+    <div class="fa-impact">`;
+
+  if (best && Math.abs(best.total) > 0.01){
+    html += `<div class="fa-impact-card mvp">
+      <div class="fa-impact-label">🥇 MVP</div>
+      <div class="fa-impact-name" style="color:${roleColor(bestH?.role)}">${escapeHtml(best.name)}</div>
+      <div class="fa-impact-score pos">${best.total > 0 ? "+" : ""}${best.total.toFixed(1)}</div>
+      <div class="fa-impact-reason">${bestReason}</div>
+    </div>`;
+  }
+
+  if (worst && Math.abs(worst.total) > 0.01 && worst.name !== best.name){
+    const worstVs = worst.vs ? worst.vs.filter(v => v.score < 0) : [];
+    const worstDom = worstVs.sort((a,b) => a.score - b.score).slice(0, 2).map(v => escapeHtml(v.defender));
+    const worstReason = worstDom.length ? `Struggles against <strong>${worstDom.join("</strong>, <strong>")}</strong> — the enemy composition counters this pick effectively.` : `Negative total contribution drags the team down.`;
+    html += `<div class="fa-impact-card weak">
+      <div class="fa-impact-label">⚠️ Weakest Link</div>
+      <div class="fa-impact-name" style="color:${roleColor(worstH?.role)}">${escapeHtml(worst.name)}</div>
+      <div class="fa-impact-score neg">${worst.total > 0 ? "+" : ""}${worst.total.toFixed(1)}</div>
+      <div class="fa-impact-reason">${worstReason}</div>
+    </div>`;
+  }
+
+  html += `</div></div>`;
+  return html;
+}
+
+function fa_decidingFactor(totalA, totalB, aBreak, bBreak, winnerTeam){
+  const avgA = aBreak.length ? totalA / aBreak.length : 0;
+  const avgB = bBreak.length ? totalB / bBreak.length : 0;
+  const diff = totalA - totalB;
+
+  // Count how many matchups each team wins (per-hero vs per-hero comparison)
+  let winsA = 0, winsB = 0, ties = 0;
+  aBreak.forEach(x => {
+    (x.vs || []).forEach(v => {
+      if (v.score > 0.5) winsA++;
+      else if (v.score < -0.5) winsB++;
+      else ties++;
+    });
+  });
+
+  // Biggest single swing
+  const allPairs = [];
+  aBreak.forEach(x => (x.vs || []).forEach(v => allPairs.push({ attacker: x.name, defender: v.defender, score: v.score, team: "A" })));
+  bBreak.forEach(x => (x.vs || []).forEach(v => allPairs.push({ attacker: x.name, defender: v.defender, score: v.score, team: "B" })));
+  allPairs.sort((p,q) => Math.abs(q.score) - Math.abs(p.score));
+  const biggest = allPairs[0];
+  const totalPairs = allPairs.length;
+
+  let sentences = [];
+  if (totalPairs > 0){
+    sentences.push(`Across <strong>${totalPairs}</strong> individual matchups, <strong>Team ${winnerTeam}</strong> won <strong>${winnerTeam === "A" ? winsA : winsB}</strong> while the opposing side took <strong>${winnerTeam === "A" ? winsB : winsA}</strong> (${ties} even).`);
+  }
+  if (biggest && Math.abs(biggest.score) > 0.5){
+    const side = biggest.team === winnerTeam ? "in their favor" : "in the opponent's favor";
+    sentences.push(`The largest single swing was <strong>${escapeHtml(biggest.attacker)}</strong> vs <strong>${escapeHtml(biggest.defender)}</strong> at ${biggest.score > 0 ? "+" : ""}${biggest.score.toFixed(1)} ${side}.`);
+  }
+  if (Math.abs(diff) > 10){
+    sentences.push(`The <strong>${Math.abs(diff).toFixed(1)}-point gap</strong> reflects a lopsided composition matchup — the winning team's picks align more favorably against the opposing roster.`);
+  } else if (Math.abs(diff) > 3){
+    sentences.push(`The <strong>${Math.abs(diff).toFixed(1)}-point margin</strong> comes down to a few critical counter interactions tipping the scale.`);
+  } else {
+    sentences.push(`The fight is <strong>extremely close</strong> — individual execution and draft order nuance will decide the outcome beyond these precomputed scores.`);
+  }
+
+  return sentences.join(" ");
+}
+
+function buildFightAnalysis(teamA, teamB, aBreak, bBreak, totalA, totalB){
+  const aNames = teamA.filter(Boolean);
+  const bNames = teamB.filter(Boolean);
+  const diff = totalA - totalB;
+  const winner = diff > 0.001 ? "A" : (diff < -0.001 ? "B" : "tie");
+  const verdict = winner === "tie" ? "Dead Even" : `Team ${winner} Wins`;
+  const gapText = winner === "tie" ? "±0.0" : `${diff > 0 ? "+" : ""}${diff.toFixed(1)}`;
+
+  if (aNames.length === 0 || bNames.length === 0) return "";
+
+  const html = `
+    <div class="fight-analysis">
+      <div class="fa-badge">
+        <span class="fa-winner">${escapeHtml(verdict)}</span>
+        <span class="fa-gap">${gapText} gap · ${aNames.length}v${bNames.length}</span>
+      </div>
+
+      <div class="fa-summary">
+        <strong>Team ${escapeHtml(winner)}</strong> fields ${aNames.length === 5 ? "a full" : "a"} ${escapeHtml(fa_damageMix(aNames).mixed ? "mixed-damage" : "focused")} lineup against a ${escapeHtml(fa_damageMix(bNames).mixed ? "mixed" : "focused")} opposition. ${fa_decidingFactor(totalA, totalB, aBreak, bBreak, winner)}
+      </div>
+
+      ${fa_compSectionHTML(aNames, bNames)}
+
+      ${fa_matchupRows(aNames, bNames, aBreak, bBreak)}
+
+      ${fa_rulesSection(aBreak, bBreak)}
+
+      ${fa_impactSection(aBreak, bBreak, winner)}
+
+      <div class="fa-section">
+        <div class="fa-section-title">Deciding Factors</div>
+        <div class="fa-deciding-text">${fa_decidingFactor(totalA, totalB, aBreak, bBreak, winner)}</div>
+      </div>
+    </div>`;
+
+  return html;
 }
 
 function buildFightHTML(totalA, totalB, aBreak, bBreak){
@@ -1484,20 +1981,29 @@ function runFight(){
   }
 
   // Each hero's contribution = sum of its attacker-scores vs every hero on the opposing side.
-  const aBreak = a.map(name => {
-    const vs = b.map(def => ({ defender: def, score: getScore(name, def) }));
+  const aBreak = teamA.map(name => {
+    if (!name) return null;
+    const vs = b.map(def => ({ defender: def, score: getScore(name, def), matched_rules: getMatchedRules(name, def) }));
     return { name, total: vs.reduce((s,x)=>s+x.score,0), vs };
-  }).sort((x,y) => y.total - x.total);
+  }).filter(Boolean).sort((x,y) => y.total - x.total);
 
-  const bBreak = b.map(name => {
-    const vs = a.map(def => ({ defender: def, score: getScore(name, def) }));
+  const bBreak = teamB.map(name => {
+    if (!name) return null;
+    const vs = a.map(def => ({ defender: def, score: getScore(name, def), matched_rules: getMatchedRules(name, def) }));
     return { name, total: vs.reduce((s,x)=>s+x.score,0), vs };
-  }).sort((x,y) => y.total - x.total);
+  }).filter(Boolean).sort((x,y) => y.total - x.total);
 
   const totalA = aBreak.reduce((s,x)=>s+x.total,0);
   const totalB = bBreak.reduce((s,x)=>s+x.total,0);
 
-  fightResultsEl.innerHTML = buildFightHTML(totalA, totalB, aBreak, bBreak);
+  // Original order for lane analysis
+  const aOrdered = teamA.filter(Boolean).map(name => aBreak.find(x => x.name === name) || { name, total: 0, vs: [] });
+  const bOrdered = teamB.filter(Boolean).map(name => bBreak.find(x => x.name === name) || { name, total: 0, vs: [] });
+
+  const classicHTML = buildFightHTML(totalA, totalB, aBreak, bBreak);
+  const analysisHTML = buildFightAnalysis(teamA.filter(Boolean), teamB.filter(Boolean), aOrdered, bOrdered, totalA, totalB);
+
+  fightResultsEl.innerHTML = analysisHTML + classicHTML;
 }
 
 // ------------------------------------------------------------
