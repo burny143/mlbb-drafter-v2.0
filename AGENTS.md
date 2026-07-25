@@ -54,6 +54,7 @@ python compute_counters.py --dry-run
 The script loads all reference tables from Supabase, computes scores for every (attacker, defender) pair, and upserts into `counter_scores`. See the docstring in `compute_counters.py` for the full formula.
 
 **2026-07-25 (later):** RLS fix: `synergy_scores` and `role_matrix` had RLS enabled blocking anon reads. Ran `DISABLE ROW LEVEL SECURITY` on both + `GRANT SELECT ON ALL TABLES IN SCHEMA PUBLIC TO anon`. Also added Lolita + Hanabi = 10 synergy pair (row 11 in Synergy sheet). Migrated. No counter recompute needed (synergy doesn't affect counter scores).
+*2026-07-25 (later):* Added 3 more synergies: Bruno + Diggie = 8, Ixia + Diggie = 8, Johnson + Arlott = 12. Total synergy_pairs = 42.
 
 **2026-07-25:** Difficulty Gap removed from formula. Assumption is all players are equally skilled — difficulty no longer contributes to counter scores. All 17,556 pairs recomputed. Re-run `compute_counters.py` after any weight/rule/data change.
 
