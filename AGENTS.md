@@ -86,8 +86,29 @@ The script loads all reference tables from Supabase, computes scores for every (
 - **`DEFAULT_SPIKE_ORDER = 3`:** Null `spike_order` falls back to the "Mid" band to avoid a `TypeError` crash on arithmetic.
 - **`manual_overrides` lookup key:** Uses `(atk["name"], defn["name"])` — names, not IDs. Works because the duplicate-name validation ensures names are unique.
 
+## Excel workbook conventions
+
+The single source of truth is `mobile_legends_heroes_updated.xlsx`:
+
+| Sheet | Content |
+|-------|---------|
+| Heroes | Hero stats (name, role, lane, damage_type, style, stats, etc.) |
+| Data-Input | Global weights (rows 7-16), role matrix (18-24), hard counter rules (29-130), style matrix (164-186), manual overrides (191-1189) |
+| Synergy | Hero synergy pairs (optional) |
+
+**Hard counter rule conventions:**
+- Default to symmetric values (`bonus_to_attacker = -penalty_to_defender`). Asymmetric values are allowed when a specific matchup requires the attacker to benefit more (or less) than the defender is penalized, but this should be the exception.
+- Each `(attacker, condition_type, condition_value)` triple must appear at most once. Duplicates cause silent double-stacking in `hard_counter_bonus()`.
+- The `_norm()` helper in `compute_counters.py` normalizes all string comparisons to lowercase. Entries with inconsistent casing (e.g. `"Angela"` vs `"angela"`) will be grouped together and stack. Run a case-insensitive dedup check after editing.
+
+**Workflow for edits:**
+1. Edit the Excel
+2. Run `migrate_to_supabase.py` to push to Supabase
+3. Run `compute_counters.py` to recompute all 17,556 pairs
+
 ## Troubleshooting
 
 - **"row count mismatch" after compute** — the hero count may have changed. Run `compute_counters.py` again.
 - **score rows not loading** — check Supabase project's "Max Rows" setting (default 1000). The front-end paginates with `.range()` but if it's set below 1000 the fetch may need smaller pages.
 - **computation crashes with `KeyError` on weight lookup** — a required coefficient is missing from `global_weights`. Add the missing key and re-run.
+- **rule count differs between Excel and DB after migration** — the migrate script upserts by key but doesn't delete stale rows. If you remove rules from the Excel, delete the corresponding rows in Supabase manually or truncate the table before re-migrating.
