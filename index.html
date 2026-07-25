@@ -2124,6 +2124,36 @@ function fa_rulesSection(aBreak, bBreak){
   </div>`;
 }
 
+/**
+ * fa_synergySection: Show known synergy combos for a team.
+ * Returns HTML string with the pair list and total, or empty string if none.
+ */
+function fa_synergySection(names, label){
+  const pairs = [];
+  let total = 0;
+  for (let i = 0; i < names.length; i++) {
+    for (let j = i + 1; j < names.length; j++) {
+      const s = getSynergy(names[i], names[j]);
+      if (s) {
+        pairs.push({ a: names[i], b: names[j], syn: s });
+        total += s;
+      }
+    }
+  }
+  if (!pairs.length) return "";
+  const cls = total > 20 ? "high" : total > 8 ? "med" : "";
+  const pairsHtml = pairs.map(p =>
+    `<div class="syn-pair">+${p.syn.toFixed(0)} <span class="syn-pair-names">${escapeHtml(p.a)} + ${escapeHtml(p.b)}</span></div>`
+  ).join("");
+  return `
+    <div class="fa-section">
+      <div class="fa-section-title">${escapeHtml(label)} Synergy</div>
+      <div class="syn-sub">Known combo bonuses within the team</div>
+      <div class="syn-total ${cls}">Total: +${total.toFixed(0)}</div>
+      ${pairsHtml}
+    </div>`;
+}
+
 function fa_impactSection(aBreak, bBreak, winnerTeam){
   const sortedA = [...aBreak].sort((x,y) => y.total - x.total);
   const sortedB = [...bBreak].sort((x,y) => y.total - x.total);
@@ -2338,10 +2368,14 @@ function buildFightAnalysis(teamA, teamB, aBreak, bBreak, totalA, totalB, compA,
       <div class="fa-summary">
         ${winner === "tie"
           ? `<strong>Both teams</strong> field`
-          : `<strong>Team ${escapeHtml(winner)}</strong> fields`} ${aNames.length === 5 ? "a full" : "a"} ${escapeHtml(fa_damageMix(aNames).mixed ? "mixed-damage" : "focused")} lineup against a ${escapeHtml(fa_damageMix(bNames).mixed ? "mixed" : "focused")} opposition. ${winner === "tie" ? "Neither side holds a decisive counter edge." : ""}
+          : `<strong>Team ${escapeHtml(winner)}</strong> fields`} ${aNames.length === 5 ? "a full" : "a"} ${escapeHtml(fa_damageMix(aNames).mixed ? "mixed-damage" : "focused")} lineup against a ${escapeHtml(fa_damageMix(bNames).mixed ? "mixed" : "focused")} opposition.
+        ${winner === "tie" ? "Neither side holds a decisive counter edge." : ""}
       </div>
 
       ${fa_compSectionHTML(aNames, bNames)}
+
+      ${fa_synergySection(aNames, "Team A")}
+      ${fa_synergySection(bNames, "Team B")}
 
       ${fa_matchupRows(aNames, bNames, aBreak, bBreak)}
 
@@ -2647,23 +2681,33 @@ function compositionPenalty(names){
   const reasons = [];
   let total = 0;
   const heroes = names.map(n => heroInfo(n)).filter(Boolean);
-  const roles = heroes.map(h => h.role).filter(Boolean);
-  const roleCounts = {};
-  roles.forEach(r => { roleCounts[r] = (roleCounts[r] || 0) + 1; });
 
-  // --- Role stacking ---
+  // Primary roles only for stacking (role2 doesn't count as a stack)
+  const primaryRoles = heroes.map(h => h.role).filter(Boolean);
+  const roleCounts = {};
+  primaryRoles.forEach(r => { roleCounts[r] = (roleCounts[r] || 0) + 1; });
+
+  // All roles (primary + secondary) for coverage checks
+  const allRoles = heroes.flatMap(h => {
+    const r = [];
+    if (h.role) r.push(h.role);
+    if (h.role2) r.push(h.role2);
+    return r;
+  });
+
+  // --- Role stacking (primary role only) ---
   for (const [role, count] of Object.entries(roleCounts)){
     if (count >= 5)      { total += 90; reasons.push(`5× ${role}: -90`); }
     else if (count >= 4) { total += 55; reasons.push(`4× ${role}: -55`); }
     else if (count >= 3) { total += 30; reasons.push(`3× ${role}: -30`); }
   }
 
-  // --- Missing critical roles ---
-  const hasTank = roles.includes("Tank");
-  const hasSupport = roles.includes("Support");
-  const hasFighter = roles.includes("Fighter");
-  const hasMM = roles.includes("Marksman");
-  const hasMage = roles.includes("Mage");
+  // --- Missing critical roles (checks both primary and secondary) ---
+  const hasTank = allRoles.includes("Tank");
+  const hasSupport = allRoles.includes("Support");
+  const hasFighter = allRoles.includes("Fighter");
+  const hasMM = allRoles.includes("Marksman");
+  const hasMage = allRoles.includes("Mage");
 
   if (!hasTank && !hasSupport) {
     total += 25;
