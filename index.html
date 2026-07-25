@@ -1879,7 +1879,7 @@ function fa_decidingFactor(totalA, totalB, aBreak, bBreak, winnerTeam){
   bBreak.forEach(x => (x.vs || []).forEach(v => allPairs.push({ attacker: x.name, defender: v.defender, score: v.score, team: "B" })));
   allPairs.sort((p,q) => Math.abs(q.score) - Math.abs(p.score));
   const biggest = allPairs[0];
-  const totalPairs = allPairs.length;
+  const totalPairs = winsA + winsB + ties;
 
   let sentences = [];
   if (totalPairs > 0){
