@@ -29,7 +29,7 @@ A counter-pick recommendation engine for **Mobile Legends: Bang Bang**. It migra
 ## Features
 
 - **133 MLBB heroes** with full stats, roles, damage types, power spikes, style tags, and lane assignments
-- **Multi-factor scoring** — role matchup, burst potential, difficulty gap, damage-type advantage, power-spike timing, style interactions, hard-counter rules, range-type advantage, and anti-heal advantage
+- **Multi-factor scoring** — role matchup, stat (damage + survivability), sigmoid-scaled difficulty gap, damage-type advantage with true-damage bonus, 3×3 categorical power-spike matrix, weighted style blend, hard-counter rules, range-type advantage, and anti-heal advantage
 - **Precomputed matrix** — all 133 × 132 = ~17,500 attacker→defender pairs computed offline and stored in Postgres with component breakdown
 - **Interactive draft board** — select enemy picks in hexagonal slots and see the top 10 counter picks update in real time
 - **Sum / Average mode** — toggle between total score and per-pick average aggregate
@@ -132,11 +132,11 @@ For every (attacker, defender) hero pair, the total counter score is:
 
 ```
 TOTAL = Role Advantage
-      + Stat (Burst)
-      + Difficulty Gap
-      + Damage Type Advantage
-      + Power Spike Timing
-      + Style Matchup
+      + Stat (Damage + Survivability)
+      + Difficulty Gap (sigmoid-scaled)
+      + Damage Type Advantage (+True Damage bonus)
+      + Power Spike Timing (3×3 categorical matrix)
+      + Style Matchup (weighted blend)
       + Hard Counter Bonus
       + Range Type Advantage
       + Anti-Heal Advantage
@@ -154,39 +154,55 @@ MAX(role_matrix[atk.role → def.role],
 ```
 The 6×6 role grid (Tank, Fighter, Assassin, Mage, Marksman, Support) defines base advantage points. If the attacker has a secondary role (`role2`), the better of the two matchups is used.
 
-#### 2. Stat (Burst Potential)
+#### 2. Stat (Damage + Survivability)
 ```
-((atk.offense + atk.ability_effects) / 2 - def.durability) × burst_mult
+damage_score = ((atk.offense + atk.ability_effects) / 2 - def.durability) × burst_mult
+surv_score   = (atk.durability - (def.offense + def.ability_effects) / 2) × burst_mult × 0.3
 ```
-Measures whether the attacker's offensive stats overcome the defender's durability.
+Measures not just whether the attacker can kill the defender, but also whether the attacker can survive the defender's counter-burst. The survivability term (weighted at 0.3×) penalizes glass-cannon attackers against high-damage defenders.
 
 #### 3. Difficulty Gap
 ```
 gap = atk.difficulty - def.difficulty
-gap × diff_mult   if gap > 20
-0                 otherwise
+weight = 1 / (1 + e^(-0.15 × (gap - 10)))
+score = gap × weight × diff_mult
 ```
-A significant difficulty gap (attacker harder to play than defender) adds a bonus.
+Uses a smooth sigmoid ramp instead of a hard cutoff. A gap of 0 → 18% weight, 10 → 50%, 20 → 82%, 30 → 95%. Eliminates the discontinuity where a 19-point gap scored 0 while a 21-point gap scored full weight. Assassins (avg difficulty 62) vs Tanks (avg 34) naturally benefit, but mid-tier gaps contribute proportionally.
 
 #### 4. Damage Type Advantage
 ```
 dmgtype_mixed   if attacker damage_type is "Mixed"
 dmgtype_same    elif attacker == defender damage_type
 dmgtype_diff    else
++ TRUE_DAMAGE_BONUS (2.0) if attacker.has_true_damage
 ```
-Mixed-damage attackers are hardest to itemize against, then same-type, then different-type.
+Mixed-damage attackers are hardest to itemize against, then same-type, then different-type. Heroes with innate true damage (Karrie, Lunox, Alucard, Argus, Dyrroth, Lesley, Alpha, X.Borg, Balmond, Thamuz, Terizla, Aulus) receive a flat +2 bonus since true damage ignores all defenses.
 
 #### 5. Power Spike Timing
 ```
-(atk.spike_order - def.spike_order) × spike_mult
+band(order):
+  order ≤ 2 → "Early"
+  order ≤ 4 → "Mid"
+  5         → "Late"
+
+base = SPIKE_MATRIX[(atk_band, def_band)]
+        Early vs Late: +8     Late vs Early: -6
+        Early vs Mid:  +4     Mid  vs Late:  +4
+        Mid  vs Early: -2     Late vs Mid:   -2
+        Same band:      0
+fine_tune = (atk.spike_order - def.spike_order) × 0.5
+score = (base + fine_tune) × spike_mult
 ```
-Heroes that spike earlier get an advantage against late-game heroes.
+Replaces the linear `(spike_order_diff) × spike_mult` with a categorical 3×3 matrix. Early heroes dominate late-game carries but not other early heroes. Late-game heroes are penalized against both early and mid compositions. Fine-tune within each band preserves ordering.
 
 #### 6. Style Matchup
 ```
-MAX(style_matrix[atk.style1/2 → def.style1/2]) × style_mult
+scores = [style_matrix[atk.style1/2 → def.style1/2]] for all non-null tag pairs
+(sort descending)
+if len ≤ 1:  best × style_mult
+else:        (best × 0.6 + avg(rest) × 0.4) × style_mult
 ```
-Evaluates up to 4 combinations and takes the maximum.
+Replaces `MAX only`, which was overly optimistic for multi-tag attackers. The weighted blend (60% best, 40% average of remaining) accounts for the defender having counter-tags too. Single-tag heroes are unaffected.
 
 #### 7. Hard Counter Bonus
 ```
@@ -223,7 +239,7 @@ Seven tables defined in `schema.sql`:
 
 | Table | Purpose | Key |
 |---|---|---|
-| `heroes` | Per-hero base stats, roles, tags, lanes, damage type, power spike | `id` (PK), `name` (UNIQUE) |
+| `heroes` | Per-hero base stats, roles, tags, lanes, damage type, power spike, anti-heal flag, true-damage flag | `id` (PK), `name` (UNIQUE) |
 | `global_weights` | Tunable formula coefficients (10 rows) | `coefficient` (PK) |
 | `role_matrix` | 6×6 role matchup grid | `(attacker_role, defender_role)` (PK) |
 | `style_matrix` | 22×22 style/tag interaction grid | `(attacker_tag, defender_tag)` (PK) |
@@ -232,6 +248,7 @@ Seven tables defined in `schema.sql`:
 | `counter_scores` | Precomputed per-pair scores with component breakdown and matched rule explanations | `(attacker, defender)` (PK) |
 
 `counter_scores` includes:
+- `range_type_adv`, `antiheal_adv` — component scores for mobility-vs-ranged and anti-heal-vs-sustain matchups
 - `matched_rules jsonb` — array of matched hard-counter rule objects (type, value, bonus, penalty, note)
 - Indexes on `defender` and `score DESC` for fast lookup
 
@@ -435,6 +452,8 @@ The workbook has dropdown validations on columns A-C (hero names, condition type
 ---
 
 ## Notes & Gotchas
+
+1. **Scoring improvements (B1–B5)**: The scoring formula has been upgraded with five precision enhancements — sigmoid-scaled difficulty, weighted style blend, 3×3 categorical power-spike matrix, survivability stat term, and true-damage bonus. See [Scoring Formula](#scoring-formula) for details.
 
 1. **`hard_counter_rules` upsert**: The table has a unique index on `(attacker, condition_type, condition_value)`. The migration script upserts, so re-running safely updates existing rules without creating duplicates. Duplicate rows in the workbook with the same key are merged automatically.
 
