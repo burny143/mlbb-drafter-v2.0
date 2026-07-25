@@ -29,13 +29,16 @@ A counter-pick recommendation engine for **Mobile Legends: Bang Bang**. It migra
 ## Features
 
 - **133 MLBB heroes** with full stats, roles, damage types, power spikes, style tags, and lane assignments
-- **Multi-factor scoring** — role matchup, burst potential, difficulty gap, damage-type advantage, power-spike timing, style interactions, and hard-counter rules
-- **Precomputed matrix** — all 133 × 132 = ~17,500 attacker→defender pairs computed offline and stored in Postgres
+- **Multi-factor scoring** — role matchup, burst potential, difficulty gap, damage-type advantage, power-spike timing, style interactions, hard-counter rules, range-type advantage, and anti-heal advantage
+- **Precomputed matrix** — all 133 × 132 = ~17,500 attacker→defender pairs computed offline and stored in Postgres with component breakdown
 - **Interactive draft board** — select enemy picks in hexagonal slots and see the top 10 counter picks update in real time
 - **Sum / Average mode** — toggle between total score and per-pick average aggregate
-- **Per-matchup breakdown** — each recommendation shows a detailed bar-chart breakdown per enemy hero
+- **Per-matchup explanation** — each recommendation shows matched hard-counter rules with human-readable descriptions (e.g. "Strong against Dash/Blink heroes — Bouncing Ball cancels dashes...")
+- **Final Line-up modal** — one-click team summary with one hero per lane, role-prioritized selection (Jungle→Assassin, Roam→Tank/Support, etc.), no duplicate heroes, and per-enemy reason breakdowns
+- **Lane labels** — picked heroes show their lane(s) in bold accent color on the slot
+- **Quick-take summary** — top overall counter displayed with a natural-language explanation of why it fits
 - **Manual overrides** — force specific scores for any attacker→defender pair, bypassing the formula
-- **Hard counter rules** — special-case bonuses (e.g., "Hero X counters all heroes with Tag Y")
+- **Hard counter rules** — 102 special-case rules (Tag, Hero, Role, DamageType, Resource conditions) with notes; case-insensitive matching
 - **CI/CD** — two GitHub Actions workflows auto-run migration and score recomputation on push
 
 ---
@@ -75,6 +78,7 @@ A counter-pick recommendation engine for **Mobile Legends: Bang Bang**. It migra
 │  Reads Heroes → heroes table                                        │
 │  Reads Data-Input → global_weights, role_matrix, style_matrix,      │
 │                     hard_counter_rules, manual_overrides            │
+│  Deduplicates hard_counter_rules by (attacker, type, value) key     │
 └─────────────────────────────────┬───────────────────────────────────┘
                                   │ upsert
                                   ▼
@@ -88,7 +92,7 @@ A counter-pick recommendation engine for **Mobile Legends: Bang Bang**. It migra
 │  ┌───────────────────┐ ┌────────────────┐                          │
 │  │hard_counter_rules │ │manual_overrides│                          │
 │  ├───────────────────┤ ├────────────────┤                          │
-│  │~100 rules         │ │~1000 overrides │                          │
+│  │~102 rules         │ │~1000 overrides │                          │
 │  └───────────────────┘ └────────────────┘                          │
 └──────────────────────────────┬─────────────────────────────────────┘
                                │ read
@@ -96,14 +100,16 @@ A counter-pick recommendation engine for **Mobile Legends: Bang Bang**. It migra
 ┌─────────────────────────────────────────────────────────────────────┐
 │                   compute_counters.py                               │
 │  Reads all reference tables, computes formula for every             │
-│  (attacker, defender) pair, upserts into counter_scores.            │
-│  Supports --dry-run for preview without writes.                     │
+│  (attacker, defender) pair, stores matched rule notes in           │
+│  matched_rules JSONB column, upserts into counter_scores.          │
+│  Supports --dry-run for preview without writes.                    │
 └─────────────────────────────────┬───────────────────────────────────┘
                                   │ upsert
                                   ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                      counter_scores table                           │
 │  133 × 132 = ~17,556 rows, each with component breakdown            │
+│  + matched_rules JSONB (which hard-counter rules fired)            │
 └─────────────────────────────────┬───────────────────────────────────┘
                                   │ SELECT (read-only, anon key)
                                   ▼
@@ -112,8 +118,9 @@ A counter-pick recommendation engine for **Mobile Legends: Bang Bang**. It migra
 │  - Fetches all heroes + scores on load                              │
 │  - Interactive draft board with 5 hexagonal enemy slots             │
 │  - Real-time top-10 counter recommendations                         │
-│  - Per-matchup bar breakdown                                        │
+│  - Per-matchup explanation (matched rule notes)                     │
 │  - Sum / Average mode toggle                                        │
+│  - Final Line-up modal (role-prioritized, duplicate-free)          │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -131,6 +138,8 @@ TOTAL = Role Advantage
       + Power Spike Timing
       + Style Matchup
       + Hard Counter Bonus
+      + Range Type Advantage
+      + Anti-Heal Advantage
 ```
 
 If a `manual_overrides` row exists for that exact pair, **TOTAL is replaced entirely** by the override score.
@@ -157,7 +166,7 @@ gap = atk.difficulty - def.difficulty
 gap × diff_mult   if gap > 20
 0                 otherwise
 ```
-A significant difficulty gap (attacker harder to play than defender) adds a bonus — high-skill ceiling heroes get extra credit when the matchup favors them.
+A significant difficulty gap (attacker harder to play than defender) adds a bonus.
 
 #### 4. Damage Type Advantage
 ```
@@ -171,26 +180,40 @@ Mixed-damage attackers are hardest to itemize against, then same-type, then diff
 ```
 (atk.spike_order - def.spike_order) × spike_mult
 ```
-Heroes that spike earlier in the game get an advantage against late-game heroes.
+Heroes that spike earlier get an advantage against late-game heroes.
 
 #### 6. Style Matchup
 ```
-MAX(style_matrix[atk.style → def.style]) × style_mult
+MAX(style_matrix[atk.style1/2 → def.style1/2]) × style_mult
 ```
-The 22×22 style/tag interaction grid. Evaluates up to 4 combinations (atk.style1×def.style1, atk.style1×def.style2, atk.style2×def.style1, atk.style2×def.style2) and takes the maximum.
+Evaluates up to 4 combinations and takes the maximum.
 
 #### 7. Hard Counter Bonus
 ```
 SUM(bonus_to_attacker - penalty_to_defender) for every matching hard_counter_rule
 ```
-Rules match when `rule.attacker == atk.name` and the defender satisfies the condition:
+Rules match when `rule.attacker == atk.name` (case-insensitive) and the defender satisfies the condition:
 - **Tag** — defender's `style1` or `style2` matches `condition_value`
 - **Hero** — defender's `name` matches `condition_value`
 - **Role** — defender's `role` or `role2` matches `condition_value`
 - **DamageType** — defender's `damage_type` matches `condition_value`
 - **Resource** — defender's `resource` matches `condition_value`
 
-Multiple rules stack additively.
+Matched rules are stored in the `counter_scores.matched_rules` JSONB column and used by the frontend to display explanations.
+
+#### 8. Range Type Advantage
+```
+rangetype_mult   if attacker has a mobility tag AND defender.range_type == "Ranged"
+0                otherwise
+```
+Mobility-tagged attackers get a bonus against ranged defenders.
+
+#### 9. Anti-Heal Advantage
+```
+antiheal_mult    if attacker.has_antiheal AND defender has Sustain/Healing tag
+0                otherwise
+```
+Heroes with innate anti-heal counter sustain/healing-tagged opponents.
 
 ---
 
@@ -204,11 +227,13 @@ Seven tables defined in `schema.sql`:
 | `global_weights` | Tunable formula coefficients (10 rows) | `coefficient` (PK) |
 | `role_matrix` | 6×6 role matchup grid | `(attacker_role, defender_role)` (PK) |
 | `style_matrix` | 22×22 style/tag interaction grid | `(attacker_tag, defender_tag)` (PK) |
-| `hard_counter_rules` | Special-case counter rule triggers | `id` (serial PK) |
+| `hard_counter_rules` | Special-case counter rule triggers with notes | `id` (serial PK), unique index on `(attacker, condition_type, condition_value)` |
 | `manual_overrides` | Forced exact scores for specific pairs | `(attacker, defender)` (PK) |
-| `counter_scores` | Precomputed per-pair scores with component breakdown and matched rule explanations (populated by compute job) | `(attacker, defender)` (PK) |
+| `counter_scores` | Precomputed per-pair scores with component breakdown and matched rule explanations | `(attacker, defender)` (PK) |
 
-`counter_scores` includes a `matched_rules` JSONB column with the list of hard-counter rules that fired for the pair (type, value, bonus, penalty, note), and indexes on `defender` and `score DESC` for fast lookup.
+`counter_scores` includes:
+- `matched_rules jsonb` — array of matched hard-counter rule objects (type, value, bonus, penalty, note)
+- Indexes on `defender` and `score DESC` for fast lookup
 
 ---
 
@@ -217,15 +242,22 @@ Seven tables defined in `schema.sql`:
 `index.html` is a fully self-contained single-page application:
 
 1. **Connects** to Supabase via the JS client (CDN-loaded `@supabase/supabase-js@2`)
-2. **Loads** all 133 hero names and all ~17,500 counter scores into an in-memory `Map`
-3. **Renders** 5 hexagonal enemy-pick slots in a row
+2. **Loads** all 133 hero names and all ~17,500 counter scores (with `matched_rules`) into an in-memory `Map`
+3. **Renders** 5 hexagonal enemy-pick slots in a row with lane suggestions
 4. **User taps** an empty slot → a fuzzy-search popover appears with hero names filtered as you type
-5. **Selecting** a hero locks it into the slot
+5. **Selecting** a hero locks it into the slot (shows name, role, and lane in bold)
 6. **Results panel** immediately shows the top 10 counter picks:
-   - Each card shows the hero name, role(s), aggregate score
-   - Per-enemy breakdown with a horizontal bar (green for positive, red for negative)
-   - Rank number (gold #1)
+   - Quick-take summary of the #1 overall counter
+   - Top 5 overall + top 5 per lane (tabbed by EXP/Mid/Jungle/Gold/Roam)
+   - Each card shows hero name, role(s), lane, aggregate score
+   - Per-enemy breakdown with horizontal bar + matched rule explanations
 7. **Mode toggle** switches between **Sum** (add all matchup scores) and **Average** (divide by number of enemy picks)
+8. **Final Line-up button** opens a modal with one hero per lane:
+   - Role-prioritized selection (Jungle→Assassin, Roam→Tank/Support, etc.)
+   - No duplicate heroes
+   - Per-enemy explanation bullets with score contributions
+   - Role coverage indicator + overall summary
+   - Close and Reselect buttons
 
 The frontend is **read-only** — it uses the public anon key with no write access.
 
@@ -236,8 +268,8 @@ The frontend is **read-only** — it uses the public anon key with no write acce
 ```
 .
 ├── .github/workflows/
-│   ├── migrate.yml                 # Auto-run migration on workbook changes
-│   └── recompute_counters.yml      # Auto-recompute scores on data changes
+│   ├── migrate.yml                 # Auto-run migration on workbook/schema changes
+│   └── recompute_counters.yml      # Auto-recompute scores on every push to main
 ├── archive/                        # Historical workbook backups (not used)
 ├── index.html                      # Frontend draft board (single-page app)
 ├── schema.sql                      # PostgreSQL table definitions
@@ -245,6 +277,7 @@ The frontend is **read-only** — it uses the public anon key with no write acce
 ├── compute_counters.py             # Score matrix computation script
 ├── mobile_legends_heroes_updated.xlsx  # Source workbook (single source of truth)
 ├── requirements.txt                # Python dependencies
+├── .gitignore                      # Ignores .env and __pycache__
 └── README.md                       # This file
 ```
 
@@ -297,7 +330,7 @@ The script:
 1. Extracts **heroes** from the `Heroes` sheet
 2. Extracts **weights, matrices, rules, overrides** from `Data-Input` sheet at documented row ranges
 3. **Upserts** into `heroes`, `global_weights`, `role_matrix`, `style_matrix`, `manual_overrides`
-4. **Upserts** into `hard_counter_rules` — uses a unique index on `(attacker, condition_type, condition_value)` so re-running safely updates existing rules
+4. **Upserts** into `hard_counter_rules` — uses a unique index on `(attacker, condition_type, condition_value)` so re-running safely updates existing rules without creating duplicates; duplicate rows in the workbook are merged (bonus/penalty summed)
 5. Prints row counts and validates hero count is exactly 133
 
 ---
@@ -314,7 +347,7 @@ python compute_counters.py
 
 ### Dry-Run Mode
 
-Preview the first 10 computed rows without writing to the database:
+Preview computed rows without writing to the database:
 
 ```bash
 python compute_counters.py --dry-run
@@ -378,7 +411,7 @@ The `manual_overrides` table lets you force an exact score for any (attacker, de
 
 - **One-directional**: Override for Alice→Balthazar does not apply to Balthazar→Alice
 - **Source**: Edited in the `Data-Input` sheet of the workbook (Block 6)
-- **When present**: `compute_counters.py` uses the override score directly instead of computing the 7 components
+- **When present**: `compute_counters.py` uses the override score directly instead of computing the 9 components
 
 ---
 
@@ -393,15 +426,17 @@ The `hard_counter_rules` table defines special-case bonuses. Each rule has:
 | `condition_value` | The value to match against the defender |
 | `bonus_to_attacker` | Points added to the attacker's score |
 | `penalty_to_defender` | Points subtracted from the defender's score (effectively added to the attacker) |
-| `note` | Human-readable explanation |
+| `note` | Human-readable explanation used by the frontend |
 
-Example: A rule like `("Karrie", "Tag", "Tank", 20, 5)` means Karrie gets +20 against Tank-tagged heroes, and those defenders get -5 (net +25 for Karrie).
+Example: A rule like `("Karrie", "Tag", "Sustain", 10, -10, "True damage passive shreds lifesteal/regen-heavy sustain heroes.")` means Karrie gets +10 against Sustain-tagged heroes, and those defenders get -10 (net +20).
+
+The workbook has dropdown validations on columns A-C (hero names, condition types, condition values) for easy editing. The extraction script deduplicates rows with the same `(attacker, condition_type, condition_value)` by summing bonus/penalty values.
 
 ---
 
 ## Notes & Gotchas
 
-1. **`hard_counter_rules` upsert**: The table has a unique index on `(attacker, condition_type, condition_value)`. The migration script upserts, so re-running safely updates existing rules without creating duplicates.
+1. **`hard_counter_rules` upsert**: The table has a unique index on `(attacker, condition_type, condition_value)`. The migration script upserts, so re-running safely updates existing rules without creating duplicates. Duplicate rows in the workbook with the same key are merged automatically.
 
 2. **`Data-Input` is the only hand-edit sheet**: The `Heroes` sheet is raw data; `CounterCalculator`, `Lookup`, and `LookupCalc` are formula-driven convenience views inside Excel — these are not migrated.
 
@@ -411,7 +446,9 @@ Example: A rule like `("Karrie", "Tag", "Tank", 20, 5)` means Karrie gets +20 ag
 
 5. **133 heroes**: The sanity check in `migrate_to_supabase.py` expects exactly 133 hero rows. If the workbook is updated with new heroes, update the `EXPECTED_HERO_COUNT` constant.
 
-6. **No testing framework**: The project has no automated tests. Use `--dry-run` on `compute_counters.py` for manual verification of scores.
+6. **Case-insensitive matching**: The `hard_counter_bonus()` function in `compute_counters.py` uses case-insensitive comparisons (`.lower()`) for all rule conditions, so workbook data with inconsistent casing still matches correctly.
+
+7. **No testing framework**: The project has no automated tests. Use `--dry-run` on `compute_counters.py` for manual verification of scores.
 
 ---
 
