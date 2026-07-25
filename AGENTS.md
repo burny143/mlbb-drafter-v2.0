@@ -71,7 +71,6 @@ The script loads all reference tables from Supabase, computes scores for every (
 ## JS state invariants
 
 - `slots[0..4]` — enemy picks (null if empty)
-- `banSlots[0..4]` — banned heroes (null if empty)
 - `teamA[0..4]`, `teamB[0..4]` — fight mode rosters
 - `scoreMap`: key `"attacker|defender"` ➝ `{ score, matched_rules[] }`
 - `synergyMap`: key `"hero_a|hero_b"` (bidirectional) ➝ number
