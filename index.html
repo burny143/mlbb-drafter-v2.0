@@ -1883,11 +1883,12 @@ function fa_decidingFactor(totalA, totalB, aBreak, bBreak, winnerTeam){
 
   let sentences = [];
   if (totalPairs > 0){
-    sentences.push(`Across <strong>${totalPairs}</strong> individual matchups, <strong>Team ${winnerTeam}</strong> won <strong>${winnerTeam === "A" ? winsA : winsB}</strong> while the opposing side took <strong>${winnerTeam === "A" ? winsB : winsA}</strong> (${ties} even).`);
+    const tiePart = ties > 0 ? `, ${ties} tied` : "";
+    sentences.push(`Across <strong>${totalPairs}</strong> individual matchups, <strong>Team ${winnerTeam}</strong> won <strong>${winnerTeam === "A" ? winsA : winsB}</strong> while the opposing side took <strong>${winnerTeam === "A" ? winsB : winsA}</strong>${tiePart}.`);
   }
   if (biggest && Math.abs(biggest.score) > 0.5){
-    const side = biggest.team === winnerTeam ? "in their favor" : "in the opponent's favor";
-    sentences.push(`The largest single swing was <strong>${escapeHtml(biggest.attacker)}</strong> vs <strong>${escapeHtml(biggest.defender)}</strong> at ${biggest.score > 0 ? "+" : ""}${biggest.score.toFixed(1)} ${side}.`);
+    const favoredTeam = biggest.score > 0 ? biggest.team : (biggest.team === "A" ? "B" : "A");
+    sentences.push(`The largest single swing was <strong>${escapeHtml(biggest.attacker)}</strong> vs <strong>${escapeHtml(biggest.defender)}</strong> at ${biggest.score > 0 ? "+" : ""}${biggest.score.toFixed(1)} favoring <strong>Team ${favoredTeam}</strong>.`);
   }
   if (Math.abs(diff) > 10){
     sentences.push(`The <strong>${Math.abs(diff).toFixed(1)}-point gap</strong> reflects a lopsided composition matchup — the winning team's picks align more favorably against the opposing roster.`);
