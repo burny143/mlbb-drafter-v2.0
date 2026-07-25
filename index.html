@@ -962,6 +962,19 @@
     padding:0 4px;
   }
 
+  .fa-metric-label{
+    font-size:11px;
+    color:var(--text-faint);
+    min-width:100px;
+    display:inline-block;
+  }
+  .fa-metric-value{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--text-dim);
+    margin-left:8px;
+  }
+
   .fa-section{
     margin-top:18px;
     padding-top:16px;
@@ -1090,6 +1103,75 @@
     .fa-mu-grid{ grid-template-columns:1fr auto 1fr; gap:8px; }
   }
 
+  /* ---------- Ban Phase ---------- */
+  .ban-toggle{
+    background:transparent;
+    border:1px solid var(--border);
+    color:var(--text-faint);
+    font-family:'Inter',sans-serif;
+    font-size:11px;
+    font-weight:600;
+    padding:4px 10px;
+    border-radius:6px;
+    cursor:pointer;
+    transition:all .15s;
+  }
+  .ban-toggle:hover{ border-color:var(--gold); color:var(--gold); }
+  .ban-toggle.active{
+    background:rgba(226,84,79,0.12);
+    border-color:var(--crimson);
+    color:var(--crimson);
+  }
+  .ban-slots-wrap{
+    margin-bottom:24px;
+    padding:16px;
+    border:1px dashed var(--crimson);
+    border-radius:12px;
+    background:rgba(226,84,79,0.03);
+  }
+  .ban-label{ color:var(--crimson) !important; }
+  .ban-actions{
+    display:flex;
+    gap:6px;
+    margin-top:10px;
+    justify-content:flex-end;
+  }
+  .hex.banned{
+    border-color:var(--crimson);
+    background:rgba(226,84,79,0.08);
+    opacity:0.7;
+  }
+  .hex.banned .hex-name{ text-decoration:line-through; color:var(--crimson); }
+  .hex.banned .hex-role{ color:var(--crimson); opacity:0.6; }
+
+  /* ---------- Pick Urgency & Spread ---------- */
+  .urgency{
+    font-family:'JetBrains Mono',monospace;
+    font-size:8.5px;
+    font-weight:600;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    padding:1px 6px;
+    border-radius:4px;
+  }
+  .urgency-high{
+    background:rgba(226,84,79,0.15);
+    color:var(--crimson);
+    border:1px solid rgba(226,84,79,0.3);
+  }
+  .urgency-low{
+    background:rgba(73,192,140,0.12);
+    color:var(--jade);
+    border:1px solid rgba(73,192,140,0.25);
+  }
+  .spread-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:8.5px;
+    color:var(--text-faint);
+    letter-spacing:0.02em;
+    margin-left:4px;
+  }
+
   /* ---------- narrative summaries ---------- */
   .quick-take{
     background:var(--bg-panel-2);
@@ -1141,6 +1223,97 @@
     font-weight:700;
   }
 
+  /* ---------- Ban Priority ---------- */
+  .ban-priority-title{ margin-top:24px; }
+  .ban-grid{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:6px;
+    margin-bottom:16px;
+  }
+  .ban-item{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:8px 10px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:3px;
+    animation:fadeIn .3s ease both;
+  }
+  .ban-rank{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:600;
+    font-size:11px;
+    color:var(--text-faint);
+  }
+  .ban-hero{
+    font-family:'Rajdhani',sans-serif;
+    font-weight:700;
+    font-size:16px;
+    letter-spacing:0.01em;
+  }
+  .ban-role{
+    font-family:'JetBrains Mono',monospace;
+    font-size:8.5px;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    color:var(--text-faint);
+  }
+  .ban-threat{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:600;
+    font-size:13px;
+    margin-top:2px;
+  }
+  .ban-threat.high{ color:var(--crimson); }
+  .ban-threat.med{ color:var(--gold); }
+
+  /* ---------- Team Synergy (final modal) ---------- */
+  .syn-section{
+    margin-top:18px;
+    border-top:1px solid var(--border-soft);
+    padding-top:16px;
+  }
+  .syn-header{
+    font-size:14px;
+    font-weight:700;
+    font-family:'Rajdhani',sans-serif;
+    letter-spacing:0.02em;
+    margin-bottom:2px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .syn-total{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:600;
+    font-size:15px;
+    color:var(--text-faint);
+  }
+  .syn-total.high{ color:var(--jade); }
+  .syn-total.med{ color:var(--gold); }
+  .syn-sub{
+    font-size:11px;
+    color:var(--text-faint);
+    margin-bottom:10px;
+  }
+  .syn-pair{
+    font-size:12px;
+    padding:4px 0;
+    color:var(--text-dim);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .syn-pair + .syn-pair{ border-top:1px solid var(--border-soft); }
+  .syn-pair-names{
+    font-family:'Rajdhani',sans-serif;
+    font-weight:600;
+    color:var(--text);
+  }
+
   /* ---------- motion / emphasis ---------- */
   @keyframes fadeIn{
     from{ opacity:0; transform:translateY(6px); }
@@ -1172,6 +1345,7 @@
     .agg-score{ grid-column:2; text-align:left; font-size:26px; margin-top:6px; }
     .agg-label{ grid-column:2; text-align:left; }
     .bd-row{ grid-template-columns:64px 1fr 40px; }
+    .ban-grid{ grid-template-columns:repeat(3,1fr); }
   }
   @media (max-width:480px){
     .slots{ grid-template-columns:repeat(2,1fr); }
@@ -1195,6 +1369,7 @@
       <button id="modeSum" class="active">Sum</button>
       <button id="modeAvg">Average</button>
     </div>
+    <button id="banToggle" class="ban-toggle" onclick="toggleBanPhase()" style="margin-left:8px">+ Ban Phase</button>
   </header>
 
   <nav class="page-tabs" role="tablist" aria-label="App section">
@@ -1203,6 +1378,14 @@
   </nav>
 
   <div id="page-draft" class="page">
+
+  <div id="banSlotsArea" style="display:none" class="ban-slots-wrap">
+    <p class="board-label ban-label">Ban Phase — banned heroes are removed from the pool entirely</p>
+    <div class="slots" id="banSlots"></div>
+    <div class="ban-actions">
+      <button class="modal-btn secondary" onclick="clearBans()">Clear Bans</button>
+    </div>
+  </div>
 
   <p class="board-label">Enemy draft — each slot has a suggested lane, tap to search (any hero can still fill it)</p>
   <div class="slots" id="slots"></div>
@@ -1302,6 +1485,10 @@ let activeSearchSlot = null;
 let LANES = [];                // the 5 detected lanes, in display order
 let activeLaneTab = null;      // currently selected lane tab in results
 let lastResults = null;        // cached computeResults() output
+let synergyMap = new Map();    // "hero_a|hero_b" -> synergy (bidirectional)
+let roleMatrix = new Map();    // "attacker_role|defender_role" -> points
+let banPhaseActive = false;    // ban phase toggle
+let banSlots = [null,null,null,null,null]; // up to 5 bans
 
 // preferred lane ordering when we can detect standard MLBB lane names
 const LANE_PRIORITY = ["exp","mid","jungle","gold","roam","support"];
@@ -1339,7 +1526,7 @@ async function loadData(){
     statusEl.textContent = "loading heroes…";
     const { data: heroRows, error: heroErr } = await client
       .from("heroes")
-      .select("name, role, role2, lane1, lane2, damage_type, style1, style2, has_antiheal, spike_order")
+      .select("name, role, role2, lane1, lane2, damage_type, style1, style2, has_antiheal, spike_order, teamfight_contribution")
       .order("name");
     if (heroErr) throw heroErr;
     heroes = heroRows;
@@ -1376,7 +1563,32 @@ async function loadData(){
       scoreMap.set(r.attacker + "|" + r.defender, { score: r.score, matched_rules: r.matched_rules || [] });
     }
 
-    rowCountEl.textContent = heroes.length + " heroes · " + scoreRows.length + " matchups loaded";
+    statusEl.textContent = "loading synergy data…";
+    synergyMap.clear();
+    const { data: synergyRows, error: synergyErr } = await client
+      .from("synergy_scores")
+      .select("hero_a, hero_b, synergy");
+    if (!synergyErr && synergyRows) {
+      for (const r of synergyRows) {
+        synergyMap.set(r.hero_a + "|" + r.hero_b, r.synergy);
+        synergyMap.set(r.hero_b + "|" + r.hero_a, r.synergy); // bidirectional lookup
+      }
+    }
+
+    statusEl.textContent = "loading role matrix…";
+    roleMatrix.clear();
+    const { data: rmRows, error: rmErr } = await client
+      .from("role_matrix")
+      .select("attacker_role, defender_role, points");
+    if (!rmErr && rmRows) {
+      for (const r of rmRows) {
+        roleMatrix.set(r.attacker_role + "|" + r.defender_role, r.points);
+      }
+    }
+
+    const synCount = synergyRows ? synergyRows.length : 0;
+    const rmCount = rmRows ? rmRows.length : 0;
+    rowCountEl.textContent = heroes.length + " heroes · " + scoreRows.length + " matchups · " + synCount + " synergy pairs · " + rmCount + " role matrix cells loaded";
     statusEl.textContent = "ready";
     setTimeout(()=>{ if(statusEl.textContent==="ready") statusEl.textContent=""; }, 1800);
 
@@ -1472,8 +1684,9 @@ function renderSearchList(i, query){
   if (!list) return;
   const q = query.trim().toLowerCase();
   const taken = new Set(slots.filter(Boolean));
+  const banSet = new Set(banSlots.filter(Boolean));
   const lane = LANES[i] || "";
-  let matches = heroes.filter(h => !taken.has(h.name));
+  let matches = heroes.filter(h => !taken.has(h.name) && !banSet.has(h.name));
   if (q) matches = matches.filter(h => h.name.toLowerCase().includes(q));
   matches.sort((a, b) => (laneRelevance(b, lane) - laneRelevance(a, lane)) || a.name.localeCompare(b.name));
   matches = matches.slice(0, 8);
@@ -1754,19 +1967,67 @@ function fa_compositionBlurb(names, label){
 function fa_compSectionHTML(teamA, teamB){
   const wA = fa_compWarnings(teamA);
   const wB = fa_compWarnings(teamB);
+  const tfA = computeTeamfightPotential(teamA);
+  const tfB = computeTeamfightPotential(teamB);
+  const roleAdv = computeRoleAdvantage(teamA, teamB);
+  const compA = teamCompositionScore(teamA);
+  const compB = teamCompositionScore(teamB);
+  const compDiff = compA - compB;
+
+  // Role advantage bar
+  const maxRole = Math.max(Math.abs(roleAdv.diff), 1);
+  const raPct = Math.min(48, Math.max(0, (roleAdv.advA / maxRole) * 40 + 4));
+  const rbPct = Math.min(48, Math.max(0, (roleAdv.advB / maxRole) * 40 + 4));
+
+  // Teamfight bar
+  const maxTf = Math.max(Math.abs(tfA), Math.abs(tfB), 1);
+  const tfaPct = Math.min(48, Math.max(0, (tfA / maxTf) * 40 + 4));
+  const tfbPct = Math.min(48, Math.max(0, (tfB / maxTf) * 40 + 4));
+
+  const raLabel = roleAdv.diff > 0.5 ? `Team A +${roleAdv.diff.toFixed(0)}` : roleAdv.diff < -0.5 ? `Team B +${(-roleAdv.diff).toFixed(0)}` : "Even";
+  const tfLabel = tfA === tfB ? "Even" : `${tfA > tfB ? "Team A" : "Team B"} +${Math.abs(tfA - tfB).toFixed(0)}`;
+
   return `
     <div class="fa-compare">
       <div class="fa-block">
         <div class="fa-block-title">Team A Composition</div>
         ${fa_compositionBlurb(teamA, "A")}
+        <div class="fa-block-row" style="margin-top:6px;font-size:11px;color:var(--text-faint)">
+          Composition score: <strong style="color:${compA >= 10 ? 'var(--jade)' : compA >= 0 ? 'var(--text)' : 'var(--crimson)'}">${compA > 0 ? "+" : ""}${compA.toFixed(0)}</strong>
+          · Teamfight: <strong>${tfA > 0 ? "+" : ""}${tfA.toFixed(0)}</strong>
+        </div>
         ${wA.length ? `<div class="fa-block-row" style="margin-top:6px"><span style="color:var(--crimson)">⚠</span> ${wA.join("</div><div class=\"fa-block-row\" style=\"margin-top:4px\"><span style=\"color:var(--crimson)\">⚠</span> ")}</div>` : ""}
       </div>
       <div class="fa-vs-badge">VS</div>
       <div class="fa-block">
         <div class="fa-block-title">Team B Composition</div>
         ${fa_compositionBlurb(teamB, "B")}
+        <div class="fa-block-row" style="margin-top:6px;font-size:11px;color:var(--text-faint)">
+          Composition score: <strong style="color:${compB >= 10 ? 'var(--jade)' : compB >= 0 ? 'var(--text)' : 'var(--crimson)'}">${compB > 0 ? "+" : ""}${compB.toFixed(0)}</strong>
+          · Teamfight: <strong>${tfB > 0 ? "+" : ""}${tfB.toFixed(0)}</strong>
+        </div>
         ${wB.length ? `<div class="fa-block-row" style="margin-top:6px"><span style="color:var(--crimson)">⚠</span> ${wB.join("</div><div class=\"fa-block-row\" style=\"margin-top:4px\"><span style=\"color:var(--crimson)\">⚠</span> ")}</div>` : ""}
       </div>
+    </div>
+    <div class="fa-section">
+      <div class="fa-section-title">Role Advantage & Teamfight Potential</div>
+      <div class="fa-block-row">
+        <span class="fa-metric-label">Role Advantage</span>
+        <div class="fa-mu-bar" style="width:120px">
+          <div class="fa-mu-fill a" style="width:${raPct}%"></div>
+          <div class="fa-mu-fill b" style="width:${rbPct}%"></div>
+        </div>
+        <span class="fa-metric-value">${escapeHtml(raLabel)}</span>
+      </div>
+      <div class="fa-block-row">
+        <span class="fa-metric-label">Teamfight Potential</span>
+        <div class="fa-mu-bar" style="width:120px">
+          <div class="fa-mu-fill a" style="width:${tfaPct}%"></div>
+          <div class="fa-mu-fill b" style="width:${tfbPct}%"></div>
+        </div>
+        <span class="fa-metric-value">${escapeHtml(tfLabel)}</span>
+      </div>
+      ${compDiff !== 0 ? `<div class="fa-block-row" style="font-size:11px;color:var(--text-faint);margin-top:4px">Overall composition ${compDiff > 0 ? `favors <strong>Team A</strong> by <strong>+${compDiff.toFixed(0)}</strong>` : `favors <strong>Team B</strong> by <strong>+${(-compDiff).toFixed(0)}</strong>`} (role diversity + teamfight + damage mix).</div>` : ""}
     </div>`;
 }
 
@@ -1889,7 +2150,19 @@ function fa_impactSection(aBreak, bBreak, winnerTeam){
   return html;
 }
 
-function fa_decidingFactor(totalA, totalB, aBreak, bBreak, winnerTeam){
+function fa_decidingFactor(totalA, totalB, aBreak, bBreak, winnerTeam, aNames, bNames){
+  const avgA = aBreak.length ? totalA / aBreak.length : 0;
+  const avgB = bBreak.length ? totalB / bBreak.length : 0;
+  const diff = totalA - totalB;
+
+  // Role advantage context
+  const roleAdv = computeRoleAdvantage(aNames, bNames);
+  const tfA = computeTeamfightPotential(aNames);
+  const tfB = computeTeamfightPotential(bNames);
+  const roleEdge = roleAdv.diff > 3 ? ` Team A has a clear <strong>role advantage</strong> (+${roleAdv.diff.toFixed(0)}) — their classes naturally counter Team B's lineup.` :
+    roleAdv.diff < -3 ? ` Team B's <strong>role composition</strong> counters Team A's classes (+${(-roleAdv.diff).toFixed(0)}).` : "";
+  const tfEdge = tfA > tfB + 4 ? ` Team A's <strong>teamfight potential</strong> (+${(tfA - tfB).toFixed(0)}) makes them more dangerous in 5v5 clustered fights.` :
+    tfB > tfA + 4 ? ` Team B has better <strong>teamfight composition</strong> (+${(tfB - tfA).toFixed(0)}), favoring them in clustered engagements.` : "";
   const avgA = aBreak.length ? totalA / aBreak.length : 0;
   const avgB = bBreak.length ? totalB / bBreak.length : 0;
   const diff = totalA - totalB;
@@ -1942,6 +2215,10 @@ function fa_decidingFactor(totalA, totalB, aBreak, bBreak, winnerTeam){
     }
   }
 
+  // Role advantage and teamfight potential context
+  if (roleEdge) sentences.push(roleEdge.trim());
+  if (tfEdge) sentences.push(tfEdge.trim());
+
   if (biggest && Math.abs(biggest.score) > 0.5){
     const favoredTeam = biggest.score > 0 ? biggest.team : (biggest.team === "A" ? "B" : "A");
     sentences.push(`The largest single swing was <strong>${escapeHtml(biggest.attacker)}</strong> vs <strong>${escapeHtml(biggest.defender)}</strong> at ${biggest.score > 0 ? "+" : ""}${biggest.score.toFixed(1)} favoring <strong>Team ${favoredTeam}</strong>.`);
@@ -1975,7 +2252,7 @@ function buildFightAnalysis(teamA, teamB, aBreak, bBreak, totalA, totalB){
       </div>
 
       <div class="fa-summary">
-        <strong>Team ${escapeHtml(winner)}</strong> fields ${aNames.length === 5 ? "a full" : "a"} ${escapeHtml(fa_damageMix(aNames).mixed ? "mixed-damage" : "focused")} lineup against a ${escapeHtml(fa_damageMix(bNames).mixed ? "mixed" : "focused")} opposition. ${fa_decidingFactor(totalA, totalB, aBreak, bBreak, winner)}
+        <strong>Team ${escapeHtml(winner)}</strong> fields ${aNames.length === 5 ? "a full" : "a"} ${escapeHtml(fa_damageMix(aNames).mixed ? "mixed-damage" : "focused")} lineup against a ${escapeHtml(fa_damageMix(bNames).mixed ? "mixed" : "focused")} opposition. ${fa_decidingFactor(totalA, totalB, aBreak, bBreak, winner, aNames, bNames)}
       </div>
 
       ${fa_compSectionHTML(aNames, bNames)}
@@ -1988,7 +2265,7 @@ function buildFightAnalysis(teamA, teamB, aBreak, bBreak, totalA, totalB){
 
       <div class="fa-section">
         <div class="fa-section-title">Deciding Factors</div>
-        <div class="fa-deciding-text">${fa_decidingFactor(totalA, totalB, aBreak, bBreak, winner)}</div>
+        <div class="fa-deciding-text">${fa_decidingFactor(totalA, totalB, aBreak, bBreak, winner, aNames, bNames)}</div>
       </div>
     </div>`;
 
@@ -2097,13 +2374,105 @@ function getMatchedRules(attacker, defender){
   const v = scoreMap.get(attacker + "|" + defender);
   return v ? v.matched_rules : [];
 }
+function getSynergy(a, b){
+  if (a === b) return 0;
+  return synergyMap.get(a + "|" + b) || 0;
+}
+
+/**
+ * computeThreat: How dangerous would it be if the enemy picked this hero next?
+ *   threat = (avg counter score vs current enemies) - (avg vulnerability to remaining unpicked heroes)
+ * A high positive value means this hero crushes your current picks while being hard to counter later.
+ */
+function computeThreat(candidate, enemies, remaining){
+  if (enemies.length === 0 || remaining.length === 0) return 0;
+  let counterSum = 0;
+  for (const e of enemies) counterSum += getScore(candidate, e);
+  let vulnSum = 0;
+  for (const r of remaining){
+    if (r !== candidate) vulnSum += getScore(r, candidate);
+  }
+  const avgCounter = counterSum / enemies.length;
+  const avgVuln = vulnSum / remaining.length;
+  return avgCounter - avgVuln;
+}
+
+/**
+ * computeRoleAdvantage: Sum role_matrix points for every A→B and B→A matchup,
+ * then return the net advantage for each team.
+ */
+function computeRoleAdvantage(aNames, bNames){
+  let advA = 0, advB = 0;
+  for (const nA of aNames) {
+    const hA = heroInfo(nA);
+    if (!hA || !hA.role) continue;
+    for (const nB of bNames) {
+      const hB = heroInfo(nB);
+      if (!hB || !hB.role) continue;
+      advA += roleMatrix.get(hA.role + "|" + hB.role) || 0;
+      advB += roleMatrix.get(hB.role + "|" + hA.role) || 0;
+    }
+  }
+  return { advA, advB, diff: advA - advB };
+}
+
+/**
+ * computeTeamfightPotential: Sum teamfight_contribution values for a team.
+ * Positive total = strong in 5v5; negative = better at picks/split.
+ */
+function computeTeamfightPotential(names){
+  let total = 0;
+  for (const n of names) {
+    const h = heroInfo(n);
+    total += h ? (h.teamfight_contribution || 0) : 0;
+  }
+  return total;
+}
+
+/**
+ * teamCompositionScore: combined metric for lineup quality.
+ * Considers role diversity (penalizes 3+ same role, rewards tank+roamer),
+ * teamfight contribution, and damage type variety.
+ */
+function teamCompositionScore(names){
+  let score = 0;
+  const roles = names.map(n => { const h = heroInfo(n); return h ? h.role : null; }).filter(Boolean);
+  const roleCounts = {};
+  roles.forEach(r => { roleCounts[r] = (roleCounts[r] || 0) + 1; });
+
+  // Penalize role stacking
+  for (const [role, count] of Object.entries(roleCounts)){
+    if (count >= 3) score -= 15;
+    else if (count >= 2) score -= 3;
+  }
+
+  // Reward role diversity
+  const uniqueRoles = new Set(roles).size;
+  score += uniqueRoles * 2;
+
+  // Reward tank + support (roamer presence)
+  if (roles.includes("Tank")) score += 5;
+  if (roles.includes("Support")) score += 3;
+
+  // Damage type diversity
+  const dmgTypes = new Set(names.map(n => { const h = heroInfo(n); return h ? h.damage_type : null; }).filter(Boolean));
+  if (dmgTypes.size > 1) score += 5;
+
+  // Teamfight contribution
+  const tf = computeTeamfightPotential(names);
+  score += Math.max(0, tf);
+
+  return score;
+}
 
 function computeResults(){
   const filled = slots.filter(Boolean);
   if (filled.length === 0) return null;
 
   const takenSet = new Set(filled);
-  const candidates = heroNames.filter(n => !takenSet.has(n));
+  const bannedNames = banSlots.filter(Boolean);
+  const bannedSet = new Set(bannedNames);
+  const candidates = heroNames.filter(n => !takenSet.has(n) && !bannedSet.has(n));
 
   const rows = candidates.map(name => {
     const breakdown = filled.map(enemy => ({
@@ -2113,7 +2482,18 @@ function computeResults(){
     }));
     const total = breakdown.reduce((a,b)=>a+b.score, 0);
     const agg = mode === "avg" ? total / filled.length : total;
-    return { name, agg, breakdown };
+    // Score spread
+    const scores = breakdown.map(b => b.score);
+    const sMin = Math.min(...scores);
+    const sMax = Math.max(...scores);
+    // Vulnerability (how easily this hero is countered by remaining unpicked)
+    const rest = heroNames.filter(n => !takenSet.has(n) && n !== name && !bannedSet.has(n));
+    let vulnSum = 0;
+    for (const r of rest) vulnSum += getScore(r, name);
+    const vulnerability = rest.length > 0 ? vulnSum / rest.length : 0;
+    // Pick urgency: high score + high vulnerability = pick early
+    const pickUrgency = vulnerability > 0 ? agg / (1 + vulnerability / 15) : agg;
+    return { name, agg, breakdown, sMin, sMax, pickUrgency, vulnerability };
   });
 
   rows.sort((a,b) => b.agg - a.agg);
@@ -2179,6 +2559,21 @@ function cardHTML(r, idx, isTop){
   }).join("");
 
   const topPick = isTop && idx === 0;
+  // Pick urgency label
+  let urgencyLabel = "";
+  if (r.pickUrgency !== undefined && r.vulnerability !== undefined){
+    const vRatio = r.vulnerability / Math.max(1, Math.abs(r.agg));
+    if (r.agg > 0 && vRatio > 1.2){
+      urgencyLabel = `<span class="urgency urgency-high" title="High vulnerability (${r.vulnerability.toFixed(1)}) relative to score — pick early before enemy counters it">Pick Early</span>`;
+    } else if (r.agg > 0 && vRatio < 0.5){
+      urgencyLabel = `<span class="urgency urgency-low" title="Low vulnerability (${r.vulnerability.toFixed(1)}) — flexible timing">Flexible</span>`;
+    }
+  }
+  // Score spread
+  const spreadLabel = (r.sMin !== undefined && r.sMax !== undefined)
+    ? `<span class="spread-label">spread ${r.sMin > 0 ? "+" : ""}${r.sMin.toFixed(0)} to ${r.sMax > 0 ? "+" : ""}${r.sMax.toFixed(0)}</span>`
+    : "";
+
   return `
     <div class="result-card${topPick ? " top-pick" : ""}" style="border-left-color:${col === "var(--fog)" ? "var(--border)" : col}; animation-delay:${Math.min(idx,6)*35}ms">
       <div class="rank ${isTop ? "top" : ""}">${idx+1}</div>
@@ -2186,6 +2581,8 @@ function cardHTML(r, idx, isTop){
         <div class="rc-name-row">
           <span class="rc-name">${escapeHtml(r.name)}</span>
           <span class="rc-role" style="--r-col:${col}">${escapeHtml(h.role || "")}${h.role2 ? " / " + escapeHtml(h.role2) : ""}${h.lane1 ? " · " + escapeHtml(h.lane1) : ""}${h.lane2 ? "/" + escapeHtml(h.lane2) : ""}</span>
+          ${urgencyLabel}
+          ${spreadLabel}
         </div>
         <div class="breakdown">${bdRows}</div>
       </div>
@@ -2230,7 +2627,12 @@ function buildFinalSummary(picks){
   const roles = new Set(picks.map(p => (heroInfo(p.name)||{}).role).filter(Boolean));
   const best = picks.reduce((a,b)=> b.agg > a.agg ? b : a);
   const worst = picks.reduce((a,b)=> b.agg < a.agg ? b : a);
-  let line = `This line-up spans <strong>${roles.size}</strong> role${roles.size!==1?"s":""} and averages <strong>${avg > 0 ? "+" : ""}${avg.toFixed(1)}</strong> per slot. Strongest: <strong>${escapeHtml(best.name)}</strong> (${best.agg > 0 ? "+" : ""}${best.agg.toFixed(1)}).`;
+  const names = picks.map(p => p.name);
+  const tf = computeTeamfightPotential(names);
+  const compScore = teamCompositionScore(names);
+  let line = `This line-up spans <strong>${roles.size}</strong> role${roles.size!==1?"s":""} and averages <strong>${avg > 0 ? "+" : ""}${avg.toFixed(1)}</strong> per slot. `;
+  line += `Composition: <strong>${compScore > 0 ? "+" : ""}${compScore.toFixed(0)}</strong> · Teamfight: <strong>${tf > 0 ? "+" : ""}${tf.toFixed(0)}</strong>. `;
+  line += `Strongest: <strong>${escapeHtml(best.name)}</strong> (${best.agg > 0 ? "+" : ""}${best.agg.toFixed(1)}).`;
   if (worst.name !== best.name){
     line += ` Weakest: <strong>${escapeHtml(worst.name)}</strong> (${worst.agg > 0 ? "+" : ""}${worst.agg.toFixed(1)})${worst.agg < 3 ? " — consider a manual swap here." : "."}`;
   }
@@ -2275,7 +2677,9 @@ function renderResults(){
 
   const results = computeResults();
   lastResults = results;
-  resultsCount.textContent = `vs ${filled.length} pick${filled.length>1?"s":""} · ${mode === "sum" ? "summed" : "averaged"}`;
+  const banCount = banSlots.filter(Boolean).length;
+  const banSuffix = banCount ? ` · ${banCount} banned` : "";
+  resultsCount.textContent = `vs ${filled.length} pick${filled.length>1?"s":""} · ${mode === "sum" ? "summed" : "averaged"}${banSuffix}`;
   if (finalBtn) finalBtn.style.display = "inline-block";
 
   if (!activeLaneTab && LANES.length) activeLaneTab = LANES[0];
@@ -2287,6 +2691,32 @@ function renderResults(){
     html += `<div class="results-subtitle">Top 5 — All Lanes</div>`;
     html += results.overall.map((r, i) => cardHTML(r, i, true)).join("");
   }
+
+  // --- Ban Priority: most threatening heroes if left unpicked ---
+  const takenSet = new Set(filled);
+  const bannedNames2 = banSlots.filter(Boolean);
+  const bannedSet2 = new Set(bannedNames2);
+  const remaining = heroNames.filter(n => !takenSet.has(n) && !bannedSet2.has(n));
+  const threats = remaining.map(name => ({
+    name,
+    threat: computeThreat(name, filled, remaining.filter(n => n !== name))
+  }));
+  threats.sort((a,b) => b.threat - a.threat);
+  const banTop = threats.slice(0, 5);
+  html += `<div class="results-subtitle ban-priority-title">Ban Priority — most threatening if left open</div>`;
+  html += `<div class="ban-grid">`;
+  banTop.forEach((t, i) => {
+    const h = heroInfo(t.name) || {};
+    const col = roleColor(h.role);
+    const cls = t.threat > 2 ? "high" : t.threat > 0.5 ? "med" : "";
+    html += `<div class="ban-item">
+      <span class="ban-rank">${i+1}</span>
+      <span class="ban-hero" style="color:${col}">${escapeHtml(t.name)}</span>
+      <span class="ban-role">${escapeHtml(h.role || "")}</span>
+      <span class="ban-threat ${cls}">${t.threat > 0 ? "+" : ""}${t.threat.toFixed(1)}</span>
+    </div>`;
+  });
+  html += `</div>`;
 
   if (LANES.length){
     html += `
@@ -2406,7 +2836,34 @@ function openFinal(){
         <div class="final-card-score ${scoreClass(r.agg)}">${r.agg > 0 ? "+" : ""}${r.agg.toFixed(1)}</div>
       </div>`;
   }).join("");
-  body.innerHTML = html;
+
+  // --- Team synergy section ---
+  let synergyHtml = "";
+  const synPairs = [];
+  let totalSyn = 0;
+  for (let i = 0; i < heroPicks.length; i++) {
+    for (let j = i + 1; j < heroPicks.length; j++) {
+      const s = getSynergy(heroPicks[i].name, heroPicks[j].name);
+      if (s) {
+        synPairs.push({ a: heroPicks[i].name, b: heroPicks[j].name, syn: s });
+        totalSyn += s;
+      }
+    }
+  }
+  if (synPairs.length > 0) {
+    const synCls = totalSyn > 20 ? "high" : totalSyn > 8 ? "med" : "";
+    let pairsHtml = synPairs.map(p =>
+      `<div class="syn-pair">+${p.syn.toFixed(0)} <span class="syn-pair-names">${escapeHtml(p.a)} + ${escapeHtml(p.b)}</span></div>`
+    ).join("");
+    synergyHtml = `
+      <div class="syn-section">
+        <div class="syn-header">Team Synergy <span class="syn-total ${synCls}">+${totalSyn.toFixed(0)}</span></div>
+        <div class="syn-sub">Known combo bonuses between line-up members</div>
+        ${pairsHtml}
+      </div>`;
+  }
+
+  body.innerHTML = html + synergyHtml;
   document.getElementById("finalModal").style.display = "flex";
 }
 
@@ -2419,6 +2876,103 @@ function clearAll(){
   closeFinal();
   for (let i = 0; i < slots.length; i++) slots[i] = null;
   renderSlots();
+  renderResults();
+}
+
+// ------------------------------------------------------------
+// Ban Phase
+// ------------------------------------------------------------
+function toggleBanPhase(){
+  banPhaseActive = !banPhaseActive;
+  const btn = document.getElementById("banToggle");
+  const area = document.getElementById("banSlotsArea");
+  btn.textContent = banPhaseActive ? "− Ban Phase" : "+ Ban Phase";
+  btn.classList.toggle("active", banPhaseActive);
+  area.style.display = banPhaseActive ? "block" : "none";
+  if (banPhaseActive) renderBanSlots();
+  renderResults();
+}
+
+function renderBanSlots(){
+  const el = document.getElementById("banSlots");
+  if (!el) return;
+  el.innerHTML = "";
+  banSlots.forEach((name, i) => {
+    const slotDiv = document.createElement("div");
+    slotDiv.className = "slot";
+    if (name){
+      const h = heroInfo(name) || {};
+      const col = roleColor(h.role);
+      slotDiv.innerHTML = `
+        <div class="hex banned" style="--role-col:${col}">
+          <span class="hex-slotnum">B${i+1}</span>
+          <div class="hex-name">${escapeHtml(name)}</div>
+          <div class="hex-role">${escapeHtml(h.role || "")}</div>
+          <button class="hex-clear" data-clear="${i}">unban</button>
+        </div>`;
+      slotDiv.querySelector(".hex-clear").addEventListener("click", (e)=>{
+        e.stopPropagation();
+        banSlots[i] = null;
+        renderBanSlots();
+        renderResults();
+      });
+    } else {
+      slotDiv.innerHTML = `
+        <div class="hex" data-open="ban-${i}">
+          <span class="hex-slotnum">B${i+1}</span>
+          <div class="hex-plus">+</div>
+          <div class="hex-empty-label">Ban Slot</div>
+          <div class="hex-flex-note">remove from pool</div>
+        </div>
+        <div class="search-pop" id="pop-ban-${i}">
+          <input type="text" placeholder="Search hero to ban…" data-input="ban-${i}" autocomplete="off">
+          <div class="search-list" data-list="ban-${i}"></div>
+        </div>`;
+      slotDiv.querySelector(".hex").addEventListener("click", ()=> openBanSearch(i));
+    }
+    el.appendChild(slotDiv);
+  });
+}
+
+function openBanSearch(i){
+  document.querySelectorAll(".search-pop.open").forEach(p => p.classList.remove("open"));
+  const pop = document.getElementById("pop-ban-" + i);
+  if (!pop) return;
+  pop.classList.add("open");
+  const input = pop.querySelector("input");
+  input.value = "";
+  renderBanSearchList(i, "");
+  setTimeout(()=> input.focus(), 0);
+  input.oninput = () => renderBanSearchList(i, input.value);
+}
+
+function renderBanSearchList(i, query){
+  const list = document.querySelector(`.search-list[data-list="ban-${i}"]`);
+  if (!list) return;
+  // Exclude already-picked enemies, already-banned, and show all remaining heroes
+  const filledSlots = slots.filter(Boolean);
+  const filledSet = new Set(filledSlots);
+  const bannedAlready = new Set(banSlots.filter(Boolean));
+  const q = query.toLowerCase();
+  const filtered = heroNames
+    .filter(n => !filledSet.has(n) && !bannedAlready.has(n) && n.toLowerCase().includes(q))
+    .slice(0, 8);
+  list.innerHTML = filtered.length
+    ? filtered.map(n => `<div class="search-item" data-name="${escapeHtml(n)}">${escapeHtml(n)}</div>`).join("")
+    : `<div class="search-item dim">${q ? "No match" : "No heroes left to ban"}</div>`;
+  list.querySelectorAll(".search-item").forEach(el => {
+    el.addEventListener("click", ()=>{
+      const name = el.dataset.name;
+      banSlots[i] = name;
+      renderBanSlots();
+      renderResults();
+    });
+  });
+}
+
+function clearBans(){
+  for (let i = 0; i < banSlots.length; i++) banSlots[i] = null;
+  renderBanSlots();
   renderResults();
 }
 

@@ -100,6 +100,7 @@ def extract_heroes(wb) -> list[dict]:
             rec[col] = int(rec[col])
         rec["has_antiheal"] = to_bool_yes_no(rec.get("has_antiheal"))
         rec["has_true_damage"] = to_bool_yes_no(rec.get("has_true_damage"))
+        rec["teamfight_contribution"] = int(rec.get("teamfight_contribution") or 0)
         for col in ("role2", "style2", "lane2"):
             rec[col] = clean(rec.get(col))
         for col in ("name", "role", "style1", "damage_type", "range_type",
@@ -217,6 +218,25 @@ def extract_manual_overrides(wb) -> list[dict]:
     return records
 
 
+def extract_synergy_scores(wb) -> list[dict]:
+    if "Synergy" not in wb.sheetnames:
+        return []
+    ws = wb["Synergy"]
+    records = []
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        hero_a, hero_b, synergy, note = (row + (None,) * 4)[:4]
+        hero_a = clean(hero_a)
+        hero_b = clean(hero_b)
+        if hero_a is None or hero_b is None or synergy is None:
+            continue
+        records.append({
+            "hero_a": hero_a,
+            "hero_b": hero_b,
+            "synergy": float(synergy),
+        })
+    return records
+
+
 # ----------------------------------------------------------------------------
 # Upsert helper — supabase-py batches, chunked to stay well under request
 # size limits for the larger tables (style_matrix ~ 484 rows, heroes ~ 133).
@@ -252,6 +272,7 @@ def main():
     hard_counters = extract_hard_counter_rules(wb)
     style_matrix = extract_style_matrix(wb)
     overrides = extract_manual_overrides(wb)
+    synergy = extract_synergy_scores(wb)
 
     print("\nUpserting into Supabase...")
     counts = {}
@@ -281,6 +302,9 @@ def main():
     )
     counts["manual_overrides"] = upsert_in_chunks(
         client, "manual_overrides", overrides, on_conflict="attacker,defender"
+    )
+    counts["synergy_scores"] = upsert_in_chunks(
+        client, "synergy_scores", synergy, on_conflict="hero_a,hero_b"
     )
 
     print("\n--- Row counts written ---")

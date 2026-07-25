@@ -28,7 +28,8 @@ create table if not exists heroes (
     resource         text not null,
     spike_order      int not null,
     has_antiheal     boolean not null default false,
-    has_true_damage  boolean not null default false
+    has_true_damage  boolean not null default false,
+    teamfight_contribution int not null default 0
 );
 
 comment on table heroes is 'One row per MLBB hero: base stats, roles, tags/lanes. Source: Heroes sheet.';
@@ -98,6 +99,21 @@ create table if not exists manual_overrides (
 );
 
 comment on table manual_overrides is 'One-directional (attacker -> defender) forced score that bypasses the formula entirely when present.';
+
+-- ----------------------------------------------------------------------------
+-- 6b) synergy_scores — hero pair synergy for team composition adjustment
+-- ----------------------------------------------------------------------------
+create table if not exists synergy_scores (
+    hero_a   text not null,
+    hero_b   text not null,
+    synergy  numeric not null,
+    primary key (hero_a, hero_b)
+);
+
+create index if not exists idx_synergy_hero_a on synergy_scores (hero_a);
+create index if not exists idx_synergy_hero_b on synergy_scores (hero_b);
+
+comment on table synergy_scores is 'Positive numbers mean heroes work well together. Used by the frontend to adjust counter recommendations based on already-picked allies.';
 
 -- ----------------------------------------------------------------------------
 -- 7) counter_scores — precomputed output (populated later by a Python batch
