@@ -53,6 +53,8 @@ python compute_counters.py --dry-run
 
 The script loads all reference tables from Supabase, computes scores for every (attacker, defender) pair, and upserts into `counter_scores`. See the docstring in `compute_counters.py` for the full formula.
 
+**2026-07-25 (later):** RLS fix: `synergy_scores` and `role_matrix` had RLS enabled blocking anon reads. Ran `DISABLE ROW LEVEL SECURITY` on both + `GRANT SELECT ON ALL TABLES IN SCHEMA PUBLIC TO anon`. Also added Lolita + Hanabi = 10 synergy pair (row 11 in Synergy sheet). Migrated. No counter recompute needed (synergy doesn't affect counter scores).
+
 **2026-07-25:** Difficulty Gap removed from formula. Assumption is all players are equally skilled — difficulty no longer contributes to counter scores. All 17,556 pairs recomputed. Re-run `compute_counters.py` after any weight/rule/data change.
 
 ## Supabase schema notes
@@ -61,6 +63,9 @@ The script loads all reference tables from Supabase, computes scores for every (
 - `heroes` table must include: `name, role, role2, lane1, lane2, damage_type, style1, style2, has_antiheal, spike_order, has_true_damage, offense, durability, ability_effects, difficulty, resource, teamfight_contribution`
 - `global_weights` uses column `coefficient` for key names and `value` for the float
 - `hard_counter_rules` links an attacker hero to a condition (Tag/Hero/Role/DamageType/Resource) on the defender
+- By default, new tables have RLS enabled. Run `ALTER TABLE <name> DISABLE ROW LEVEL SECURITY;` to allow anon reads.
+- Tables that need anon SELECT: `heroes`, `counter_scores`, `synergy_scores`, `role_matrix`, `global_weights`, `style_matrix`, `hard_counter_rules`, `manual_overrides`
+- `GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon;` must be run after `DISABLE ROW LEVEL SECURITY`
 
 ## JS state invariants
 
@@ -105,6 +110,17 @@ The single source of truth is `mobile_legends_heroes_updated.xlsx`:
 1. Edit the Excel
 2. Run `migrate_to_supabase.py` to push to Supabase
 3. Run `compute_counters.py` to recompute all 17,556 pairs
+
+## Composition penalty (front-end)
+
+Fight mode subtracts `compositionPenalty()` from each team's matchup total before determining the winner. This prevents structurally terrible lineups (5 same role, no tank, no range) from winning on matchup math alone.
+
+Defined in `index.html` as `compositionPenalty(names)`:
+- **Role stacking:** 5× same role = -90, 4× = -55, 3× = -30
+- **Missing critical roles:** No Tank or Support = -25, no Tank = -12, no Support = -8, no MM or Mage = -20, no Fighter = -8
+- **Damage homogeneity:** All same damage type = -12
+
+The penalty is displayed in the fight verdict and mentioned in the "Deciding Factors" narrative when the penalty difference is ≥20 points. Calibration: a truly bad comp (5 same role, no roamer, no range) costs ~130-160 points.
 
 ## Troubleshooting
 

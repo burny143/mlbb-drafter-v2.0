@@ -808,6 +808,15 @@
     color:var(--text-dim);
   }
   .fight-deciding strong{ color:var(--text); }
+  .fight-comp-penalty{
+    font-size:11px;
+    color:var(--crimson);
+    margin-top:4px;
+    opacity:0.85;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
 
   .fight-columns{
     display:grid;
@@ -2160,7 +2169,7 @@ function fa_impactSection(aBreak, bBreak, winnerTeam){
   return html;
 }
 
-function fa_decidingFactor(totalA, totalB, aBreak, bBreak, winnerTeam, aNames, bNames){
+function fa_decidingFactor(totalA, totalB, aBreak, bBreak, winnerTeam, aNames, bNames, compAPenalty, compBPenalty){
   const avgA = aBreak.length ? totalA / aBreak.length : 0;
   const avgB = bBreak.length ? totalB / bBreak.length : 0;
   const diff = totalA - totalB;
@@ -2266,6 +2275,18 @@ function fa_decidingFactor(totalA, totalB, aBreak, bBreak, winnerTeam, aNames, b
     );
   }
 
+  // Composition penalty narrative — when structural flaws significantly affected the score
+  const aPen = compAPenalty ? compAPenalty.total : 0;
+  const bPen = compBPenalty ? compBPenalty.total : 0;
+  const penDiff = aPen - bPen;
+  if (Math.abs(penDiff) >= 20){
+    const penalizedTeam = penDiff > 0 ? "A" : "B";
+    sentences.push(
+      `Team ${penalizedTeam}'s team composition was penalized <strong>-${Math.abs(penDiff)}</strong> for structural flaws ` +
+      `(role stacking, missing roles, damage-type homogeneity), narrowing the effective score gap.`
+    );
+  }
+
   // Role advantage and teamfight potential context
   if (roleEdge) sentences.push(roleEdge.trim());
   if (tfEdge) sentences.push(tfEdge.trim());
@@ -2297,7 +2318,7 @@ function fa_decidingFactor(totalA, totalB, aBreak, bBreak, winnerTeam, aNames, b
   return sentences.join(" ");
 }
 
-function buildFightAnalysis(teamA, teamB, aBreak, bBreak, totalA, totalB){
+function buildFightAnalysis(teamA, teamB, aBreak, bBreak, totalA, totalB, compA, compB){
   const aNames = teamA.filter(Boolean);
   const bNames = teamB.filter(Boolean);
   const diff = totalA - totalB;
@@ -2330,14 +2351,14 @@ function buildFightAnalysis(teamA, teamB, aBreak, bBreak, totalA, totalB){
 
       <div class="fa-section">
         <div class="fa-section-title">Deciding Factors</div>
-        <div class="fa-deciding-text">${fa_decidingFactor(totalA, totalB, aBreak, bBreak, winner, aNames, bNames)}</div>
+        <div class="fa-deciding-text">${fa_decidingFactor(totalA, totalB, aBreak, bBreak, winner, aNames, bNames, compA, compB)}</div>
       </div>
     </div>`;
 
   return html;
 }
 
-function buildFightHTML(totalA, totalB, aBreak, bBreak){
+function buildFightHTML(totalA, totalB, aBreak, bBreak, compA, compB){
   const diff = totalA - totalB;
   const winner = diff > 0.001 ? "A" : (diff < -0.001 ? "B" : "tie");
   const verdict = winner === "tie" ? "Dead even" : fightVerdict(diff);
@@ -2358,10 +2379,18 @@ function buildFightHTML(totalA, totalB, aBreak, bBreak){
   let aPct = 50 + ((totalA - totalB) / (2 * maxAbs)) * 50;
   aPct = Math.max(6, Math.min(94, aPct));
 
+  // Composition penalty display
+  const compNote = [];
+  if (compA && compA.total > 0) compNote.push(`Team A: -${compA.total} (${compA.reasons.join(", ")})`);
+  if (compB && compB.total > 0) compNote.push(`Team B: -${compB.total} (${compB.reasons.join(", ")})`);
+  const compHtml = compNote.length
+    ? `<div class="fight-comp-penalty" title="${escapeHtml(compNote.join(" · "))}">Comp: ${compNote.join(" · ")}</div>`
+    : "";
+
   return `
     <div class="fight-verdict ${winner === "A" ? "a-win" : winner === "B" ? "b-win" : ""}">
       <div class="fight-verdict-title">${winner === "tie" ? "Perfectly Even Fight" : `${winnerLabel} Wins`}</div>
-      <div class="fight-verdict-sub">${verdict} · ${diff > 0 ? "+" : ""}${diff.toFixed(1)} score gap</div>
+      <div class="fight-verdict-sub">${verdict} · ${diff > 0 ? "+" : ""}${diff.toFixed(1)} score gap${compHtml}</div>
       <div class="fight-tug-track">
         <div class="fight-tug-fill" style="width:${aPct}%"></div>
         <div class="fight-tug-mid"></div>
@@ -2401,15 +2430,21 @@ function runFight(){
     return { name, total: computeNormalizedTotal(name, vs), vs };
   }).filter(Boolean).sort((x,y) => y.total - x.total);
 
-  const totalA = aBreak.reduce((s,x)=>s+x.total,0);
-  const totalB = bBreak.reduce((s,x)=>s+x.total,0);
+  const rawTotalA = aBreak.reduce((s,x)=>s+x.total,0);
+  const rawTotalB = bBreak.reduce((s,x)=>s+x.total,0);
+
+  // Apply composition penalty — bad team structure costs points
+  const compA = compositionPenalty(teamA.filter(Boolean));
+  const compB = compositionPenalty(teamB.filter(Boolean));
+  const totalA = rawTotalA - compA.total;
+  const totalB = rawTotalB - compB.total;
 
   // Original order for lane analysis
   const aOrdered = teamA.filter(Boolean).map(name => aBreak.find(x => x.name === name) || { name, total: 0, vs: [] });
   const bOrdered = teamB.filter(Boolean).map(name => bBreak.find(x => x.name === name) || { name, total: 0, vs: [] });
 
-  const classicHTML = buildFightHTML(totalA, totalB, aBreak, bBreak);
-  const analysisHTML = buildFightAnalysis(teamA.filter(Boolean), teamB.filter(Boolean), aOrdered, bOrdered, totalA, totalB);
+  const classicHTML = buildFightHTML(totalA, totalB, aBreak, bBreak, compA, compB);
+  const analysisHTML = buildFightAnalysis(teamA.filter(Boolean), teamB.filter(Boolean), aOrdered, bOrdered, totalA, totalB, compA, compB);
 
   fightResultsEl.innerHTML = analysisHTML + classicHTML;
 }
@@ -2595,6 +2630,71 @@ function teamCompositionScore(names){
   score += Math.max(0, tf);
 
   return score;
+}
+
+/**
+ * compositionPenalty: Penalty points subtracted from a team's total score based
+ * on structural composition flaws. Mirrors the kind of analysis a coach would
+ * flag — role stacking, missing critical roles, damage-type homogeneity.
+ *
+ * Returns { total, reasons[] } where total >= 0 (higher = worse comp).
+ *
+ * Calibrated so a truly bad comp (5 same role, no tank, no range) costs
+ * ~130-160 points — enough to flip a comfortable matchup win into a loss,
+ * but not so harsh that a mild comp issue overrides a strong counter edge.
+ */
+function compositionPenalty(names){
+  const reasons = [];
+  let total = 0;
+  const heroes = names.map(n => heroInfo(n)).filter(Boolean);
+  const roles = heroes.map(h => h.role).filter(Boolean);
+  const roleCounts = {};
+  roles.forEach(r => { roleCounts[r] = (roleCounts[r] || 0) + 1; });
+
+  // --- Role stacking ---
+  for (const [role, count] of Object.entries(roleCounts)){
+    if (count >= 5)      { total += 90; reasons.push(`5× ${role}: -90`); }
+    else if (count >= 4) { total += 55; reasons.push(`4× ${role}: -55`); }
+    else if (count >= 3) { total += 30; reasons.push(`3× ${role}: -30`); }
+  }
+
+  // --- Missing critical roles ---
+  const hasTank = roles.includes("Tank");
+  const hasSupport = roles.includes("Support");
+  const hasFighter = roles.includes("Fighter");
+  const hasMM = roles.includes("Marksman");
+  const hasMage = roles.includes("Mage");
+
+  if (!hasTank && !hasSupport) {
+    total += 25;
+    reasons.push("No roamer (Tank or Support): -25");
+  } else if (!hasTank) {
+    total += 12;
+    reasons.push("No Tank: -12");
+  } else if (!hasSupport) {
+    total += 8;
+    reasons.push("No Support: -8");
+  }
+
+  if (!hasMM && !hasMage) {
+    total += 20;
+    reasons.push("No sustained damage source (Marksman or Mage): -20");
+  }
+
+  if (!hasFighter) {
+    total += 8;
+    reasons.push("No Fighter: -8");
+  }
+
+  // --- Damage type homogeneity ---
+  const dmgTypes = new Set(heroes.map(h => h.damage_type).filter(Boolean));
+  if (dmgTypes.size === 1) {
+    total += 12;
+    const onlyType = [...dmgTypes][0];
+    reasons.push(`All ${onlyType} damage: -12`);
+  }
+
+  return { total, reasons };
 }
 
 function computeResults(){
