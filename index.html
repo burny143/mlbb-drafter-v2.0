@@ -2409,11 +2409,27 @@ function computeThreat(candidate, enemies, remaining){
 /**
  * computeRoleAdvantage: Sum role_matrix points for every A→B and B→A matchup,
  * then return the net advantage for each team.
- * NOTE: Only uses primary role (not role2) — this is a coarse compositional
- * comparison for fight analysis, intentionally simpler than the pre-computed
- * counter score formula which does consider role2 for individual matchups.
+ * Mirrors role_advantage() in compute_counters.py — takes the max of
+ * role_matrix[primary|def] and role_matrix[role2|def] for each pair,
+ * so hybrid-role heroes (Fighter/Assassin, etc.) don't undervalue their
+ * secondary role in teamfight comparisons.
  */
 function computeRoleAdvantage(aNames, bNames){
+  // helper: get the best role_matrix value for (attacker roles x defender role)
+  // Uses Map.has() deliberately — a missing cell (no entry for this role pair)
+  // must be excluded from the candidate set, not coerced to 0. Only defaults
+  // to 0 if NO valid candidate exists. This mirrors role_advantage() in
+  // compute_counters.py which skips missing keys entirely.
+  function bestRoleScore(atkRole, atkRole2, defRole){
+    const candidates = [];
+    const key1 = atkRole + "|" + defRole;
+    if (roleMatrix.has(key1)) candidates.push(roleMatrix.get(key1));
+    if (atkRole2) {
+      const key2 = atkRole2 + "|" + defRole;
+      if (roleMatrix.has(key2)) candidates.push(roleMatrix.get(key2));
+    }
+    return candidates.length ? Math.max(...candidates) : 0;
+  }
   let advA = 0, advB = 0;
   for (const nA of aNames) {
     const hA = heroInfo(nA);
@@ -2421,8 +2437,8 @@ function computeRoleAdvantage(aNames, bNames){
     for (const nB of bNames) {
       const hB = heroInfo(nB);
       if (!hB || !hB.role) continue;
-      advA += roleMatrix.get(hA.role + "|" + hB.role) || 0;
-      advB += roleMatrix.get(hB.role + "|" + hA.role) || 0;
+      advA += bestRoleScore(hA.role, hA.role2, hB.role);
+      advB += bestRoleScore(hB.role, hB.role2, hA.role);
     }
   }
   return { advA, advB, diff: advA - advB };
