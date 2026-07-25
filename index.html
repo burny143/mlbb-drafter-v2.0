@@ -1708,6 +1708,33 @@ function fa_antihealTag(names){
   return names.some(n => { const h = heroInfo(n); return h && h.has_antiheal; });
 }
 
+function fa_compWarnings(names){
+  const warnings = [];
+  const roles = fa_roleList(names);
+  const roleCounts = {};
+  roles.forEach(r => { roleCounts[r] = (roleCounts[r] || 0) + 1; });
+  for (const [role, count] of Object.entries(roleCounts)){
+    if (count >= 3){
+      warnings.push(`<strong>${count}× ${role}</strong> — critically lacks role diversity. One-dimensional compositions are highly exploitable regardless of individual counter matchups.`);
+    }
+  }
+  if (!roles.includes("Tank")){
+    warnings.push(`<strong>No tank</strong> — lacks frontline engage, peel, and vision control.`);
+  }
+  const magicUser = names.some(n => { const h = heroInfo(n); return h && h.damage_type === "Magic"; });
+  const physUser = names.some(n => { const h = heroInfo(n); return h && h.damage_type === "Physical"; });
+  if (!magicUser && physUser){
+    warnings.push(`<strong>All physical damage</strong> — the enemy can stack Antique Cuirass + Blade Armor with zero downside.`);
+  } else if (!physUser && magicUser){
+    warnings.push(`<strong>All magic damage</strong> — the enemy can stack Athena's Shield + Radiant Armor with zero downside.`);
+  }
+  const nonRoam = names.filter(n => { const h = heroInfo(n); return h && (h.role === "Tank" || h.role === "Support"); });
+  if (nonRoam.length === 0){
+    warnings.push(`<strong>No roamer</strong> — no dedicated vision-giver or initiator.`);
+  }
+  return warnings;
+}
+
 function fa_compositionBlurb(names, label){
   const roles = fa_roleList(names);
   const dmg = fa_damageMix(names);
@@ -1725,16 +1752,20 @@ function fa_compositionBlurb(names, label){
 }
 
 function fa_compSectionHTML(teamA, teamB){
+  const wA = fa_compWarnings(teamA);
+  const wB = fa_compWarnings(teamB);
   return `
     <div class="fa-compare">
       <div class="fa-block">
         <div class="fa-block-title">Team A Composition</div>
         ${fa_compositionBlurb(teamA, "A")}
+        ${wA.length ? `<div class="fa-block-row" style="margin-top:6px"><span style="color:var(--crimson)">⚠</span> ${wA.join("</div><div class=\"fa-block-row\" style=\"margin-top:4px\"><span style=\"color:var(--crimson)\">⚠</span> ")}</div>` : ""}
       </div>
       <div class="fa-vs-badge">VS</div>
       <div class="fa-block">
         <div class="fa-block-title">Team B Composition</div>
         ${fa_compositionBlurb(teamB, "B")}
+        ${wB.length ? `<div class="fa-block-row" style="margin-top:6px"><span style="color:var(--crimson)">⚠</span> ${wB.join("</div><div class=\"fa-block-row\" style=\"margin-top:4px\"><span style=\"color:var(--crimson)\">⚠</span> ")}</div>` : ""}
       </div>
     </div>`;
 }
@@ -1863,15 +1894,30 @@ function fa_decidingFactor(totalA, totalB, aBreak, bBreak, winnerTeam){
   const avgB = bBreak.length ? totalB / bBreak.length : 0;
   const diff = totalA - totalB;
 
-  // Count how many matchups each team wins (per-hero vs per-hero comparison)
-  let winsA = 0, winsB = 0, ties = 0;
+  // Count how many matchups each team wins (per-hero vs per-hero comparison, A→B direction)
+  let winsA_dir1 = 0, winsB_dir1 = 0, ties1 = 0;
   aBreak.forEach(x => {
     (x.vs || []).forEach(v => {
-      if (v.score > 0.5) winsA++;
-      else if (v.score < -0.5) winsB++;
-      else ties++;
+      if (v.score > 0.5) winsA_dir1++;
+      else if (v.score < -0.5) winsB_dir1++;
+      else ties1++;
     });
   });
+  // B→A direction
+  let winsA_dir2 = 0, winsB_dir2 = 0, ties2 = 0;
+  bBreak.forEach(x => {
+    (x.vs || []).forEach(v => {
+      if (v.score > 0.5) winsB_dir2++;   // positive B score = B beats A
+      else if (v.score < -0.5) winsA_dir2++;
+      else ties2++;
+    });
+  });
+  // Aggregate: winsA = A beats B in either direction
+  const winsA = winsA_dir1 + winsA_dir2;
+  const winsB = winsB_dir1 + winsB_dir2;
+  const totalPairs = winsA + winsB + ties1 + ties2;
+  const theWinnerWins = winnerTeam === "A" ? winsA : winsB;
+  const theLoserWins = winnerTeam === "A" ? winsB : winsA;
 
   // Biggest single swing
   const allPairs = [];
@@ -1879,13 +1925,35 @@ function fa_decidingFactor(totalA, totalB, aBreak, bBreak, winnerTeam){
   bBreak.forEach(x => (x.vs || []).forEach(v => allPairs.push({ attacker: x.name, defender: v.defender, score: v.score, team: "B" })));
   allPairs.sort((p,q) => Math.abs(q.score) - Math.abs(p.score));
   const biggest = allPairs[0];
-  const totalPairs = winsA + winsB + ties;
+
+  // Hardest carry / biggest drag
+  const allSorted = [...aBreak, ...bBreak].sort((x,y) => y.total - x.total);
+  const best = allSorted[0];
+  const worst = allSorted[allSorted.length - 1];
 
   let sentences = [];
   if (totalPairs > 0){
-    const tiePart = ties > 0 ? `, ${ties} tied` : "";
-    sentences.push(`Across <strong>${totalPairs}</strong> individual matchups, <strong>Team ${winnerTeam}</strong> won <strong>${winnerTeam === "A" ? winsA : winsB}</strong> while the opposing side took <strong>${winnerTeam === "A" ? winsB : winsA}</strong>${tiePart}.`);
+    const tiePart = ties1 + ties2 > 0 ? `, ${ties1 + ties2} tied` : "";
+    sentences.push(`Across <strong>${totalPairs}</strong> individual matchups, <strong>Team ${winnerTeam}</strong> won <strong>${theWinnerWins}</strong> while the opposing side took <strong>${theLoserWins}</strong>${tiePart}.`);
+    // If the winner won fewer matchups but won by bigger margins
+    if (theWinnerWins < theLoserWins && Math.abs(diff) > 5){
+      sentences.push(`Although Team ${winnerTeam} won fewer individual matchups, their victories were by <strong>much wider margins</strong> — the matchups they lost were close, while the matchups they won were decisive blowouts.`);
+    } else if (theWinnerWins > theLoserWins + 5 && Math.abs(diff) < 10){
+      sentences.push(`Despite winning significantly more matchups (<strong>${theWinnerWins} vs ${theLoserWins}</strong>), the overall score gap is narrow — the losing team's wins were decisive while the winning team's wins were marginal.`);
+    }
   }
+
+  // Hard-carry / drag mention
+  if (best && worst && best.name !== worst.name && Math.abs(best.total - worst.total) > 50){
+    const bestTeam = aBreak.find(x => x.name === best.name) ? "Team A" : "Team B";
+    const worstTeam = aBreak.find(x => x.name === worst.name) ? "Team A" : "Team B";
+    if (bestTeam === worstTeam){
+      sentences.push(`<strong>${escapeHtml(best.name)}</strong> is hard-carrying ${bestTeam} (${best.total > 0 ? "+" : ""}${best.total.toFixed(1)}), but <strong>${escapeHtml(worst.name)}</strong> is dragging it down (${worst.total > 0 ? "+" : ""}${worst.total.toFixed(1)}).`);
+    } else {
+      sentences.push(`The biggest disparity is <strong>${escapeHtml(best.name)}</strong> (${bestTeam}, ${best.total > 0 ? "+" : ""}${best.total.toFixed(1)}) vs <strong>${escapeHtml(worst.name)}</strong> (${worstTeam}, ${worst.total > 0 ? "+" : ""}${worst.total.toFixed(1)}) — a ${Math.abs(best.total - worst.total).toFixed(1)}-point swing.`);
+    }
+  }
+
   if (biggest && Math.abs(biggest.score) > 0.5){
     const favoredTeam = biggest.score > 0 ? biggest.team : (biggest.team === "A" ? "B" : "A");
     sentences.push(`The largest single swing was <strong>${escapeHtml(biggest.attacker)}</strong> vs <strong>${escapeHtml(biggest.defender)}</strong> at ${biggest.score > 0 ? "+" : ""}${biggest.score.toFixed(1)} favoring <strong>Team ${favoredTeam}</strong>.`);
