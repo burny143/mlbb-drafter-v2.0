@@ -37,9 +37,7 @@ A counter-pick recommendation engine for **Mobile Legends: Bang Bang**. It migra
 - **Final Line-up modal** — one-click team summary with one hero per lane, role-prioritized selection (Jungle→Assassin, Roam→Tank/Support, etc.), no duplicate heroes, and per-enemy reason breakdowns
 - **Lane labels** — picked heroes show their lane(s) in bold accent color on the slot
 - **Quick-take summary** — top overall counter displayed with a natural-language explanation of why it fits
-- **Ban Priority** — shows the 5 most threatening unpicked heroes (high counter score + low vulnerability = ban target)
-- **Ban Phase** — toggleable ban slots remove heroes entirely from the candidate pool, pick search, and ban priority
-- **Pick Urgency** — result cards show "Pick Early" (high vulnerability, must grab now) or "Flexible" (can delay) labels
+- **Pick Urgency** — result cards show "Pick Early" (high vulnerability, must grab now) or "Flexible" (can delay without risk) labels
 - **Score Spread** — per-candidate min→max breakdown range to distinguish reliable from feast-or-famine picks
 - **Team Fight Analysis** — six-section AI-like breakdown (overview, composition, matchup scoreboard, key counter interactions, impact ratings, deciding factors) with composition warnings and a **composition penalty** that reduces a team's total score for structural flaws (5× same role, no tank/roamer, no ranged DPS, all same damage type)
 - **Role Advantage** — fight analysis uses the 6×6 role matchup matrix to compute which team has class-based advantages
@@ -280,11 +278,9 @@ Eight tables defined in `schema.sql`:
    - Each card shows hero name, role(s), lane, aggregate score
    - Per-enemy breakdown with horizontal bar + matched rule explanations
 7. **Mode toggle** switches between **Sum** (add all matchup scores) and **Average** (divide by number of enemy picks)
-8. **Ban Priority** — below the results, a row shows the 5 most threatening heroes if left unpicked (threat = how well they counter your current enemies minus how easily they get countered by remaining heroes). Turn red at high threat (>2), gold at medium (>0.5).
-9. **Ban Phase** — click "+ Ban Phase" to reveal 5 ban slots. Banned heroes are removed entirely from the pool, results, and search. Useful for simulating the ban phase of a draft.
-10. **Pick Urgency** — result cards show "Pick Early" (red badge, high vulnerability to counter-picks — grab this hero now) or "Flexible" (green badge, low vulnerability — can delay without risk).
-11. **Score Spread** — result cards show the min→max range of breakdown scores, indicating consistency vs. variance.
-12. **Final Line-up button** opens a modal with one hero per lane:
+8. **Pick Urgency** — result cards show "Pick Early" (red badge, high vulnerability to counter-picks — grab this hero now) or "Flexible" (green badge, low vulnerability — can delay without risk).
+9. **Score Spread** — result cards show the min→max range of breakdown scores, indicating consistency vs. variance.
+10. **Final Line-up button** opens a modal with one hero per lane:
     - Role-prioritized selection (Jungle→Assassin, Roam→Tank/Support, etc.)
     - No duplicate heroes
     - Per-enemy explanation bullets with score contributions

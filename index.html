@@ -1113,47 +1113,6 @@
     .fa-mu-grid{ grid-template-columns:1fr auto 1fr; gap:8px; }
   }
 
-  /* ---------- Ban Phase ---------- */
-  .ban-toggle{
-    background:transparent;
-    border:1px solid var(--border);
-    color:var(--text-faint);
-    font-family:'Inter',sans-serif;
-    font-size:11px;
-    font-weight:600;
-    padding:4px 10px;
-    border-radius:6px;
-    cursor:pointer;
-    transition:all .15s;
-  }
-  .ban-toggle:hover{ border-color:var(--gold); color:var(--gold); }
-  .ban-toggle.active{
-    background:rgba(226,84,79,0.12);
-    border-color:var(--crimson);
-    color:var(--crimson);
-  }
-  .ban-slots-wrap{
-    margin-bottom:24px;
-    padding:16px;
-    border:1px dashed var(--crimson);
-    border-radius:12px;
-    background:rgba(226,84,79,0.03);
-  }
-  .ban-label{ color:var(--crimson) !important; }
-  .ban-actions{
-    display:flex;
-    gap:6px;
-    margin-top:10px;
-    justify-content:flex-end;
-  }
-  .hex.banned{
-    border-color:var(--crimson);
-    background:rgba(226,84,79,0.08);
-    opacity:0.7;
-  }
-  .hex.banned .hex-name{ text-decoration:line-through; color:var(--crimson); }
-  .hex.banned .hex-role{ color:var(--crimson); opacity:0.6; }
-
   /* ---------- Pick Urgency & Spread ---------- */
   .urgency{
     font-family:'JetBrains Mono',monospace;
@@ -1233,52 +1192,7 @@
     font-weight:700;
   }
 
-  /* ---------- Ban Priority ---------- */
-  .ban-priority-title{ margin-top:24px; }
-  .ban-grid{
-    display:grid;
-    grid-template-columns:repeat(5,1fr);
-    gap:6px;
-    margin-bottom:16px;
-  }
-  .ban-item{
-    background:var(--bg-panel);
-    border:1px solid var(--border);
-    border-radius:8px;
-    padding:8px 10px;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:3px;
-    animation:fadeIn .3s ease both;
-  }
-  .ban-rank{
-    font-family:'JetBrains Mono',monospace;
-    font-weight:600;
-    font-size:11px;
-    color:var(--text-faint);
-  }
-  .ban-hero{
-    font-family:'Rajdhani',sans-serif;
-    font-weight:700;
-    font-size:16px;
-    letter-spacing:0.01em;
-  }
-  .ban-role{
-    font-family:'JetBrains Mono',monospace;
-    font-size:8.5px;
-    letter-spacing:0.05em;
-    text-transform:uppercase;
-    color:var(--text-faint);
-  }
-  .ban-threat{
-    font-family:'JetBrains Mono',monospace;
-    font-weight:600;
-    font-size:13px;
-    margin-top:2px;
-  }
-  .ban-threat.high{ color:var(--crimson); }
-  .ban-threat.med{ color:var(--gold); }
+  /* ---------- Responsive tweaks ---------- */
 
   /* ---------- Team Synergy (final modal) ---------- */
   .syn-section{
@@ -1355,7 +1269,6 @@
     .agg-score{ grid-column:2; text-align:left; font-size:26px; margin-top:6px; }
     .agg-label{ grid-column:2; text-align:left; }
     .bd-row{ grid-template-columns:64px 1fr 40px; }
-    .ban-grid{ grid-template-columns:repeat(3,1fr); }
   }
   @media (max-width:480px){
     .slots{ grid-template-columns:repeat(2,1fr); }
@@ -1379,7 +1292,6 @@
       <button id="modeSum" class="active">Sum</button>
       <button id="modeAvg">Average</button>
     </div>
-    <button id="banToggle" class="ban-toggle" onclick="toggleBanPhase()" style="margin-left:8px">+ Ban Phase</button>
   </header>
 
   <nav class="page-tabs" role="tablist" aria-label="App section">
@@ -1389,15 +1301,7 @@
 
   <div id="page-draft" class="page">
 
-  <div id="banSlotsArea" style="display:none" class="ban-slots-wrap">
-    <p class="board-label ban-label">Ban Phase — banned heroes are removed from the pool entirely</p>
-    <div class="slots" id="banSlots"></div>
-    <div class="ban-actions">
-      <button class="modal-btn secondary" onclick="clearBans()">Clear Bans</button>
-    </div>
-  </div>
-
-  <p class="board-label">Enemy draft — each slot has a suggested lane, tap to search (any hero can still fill it)</p>
+    <p class="board-label">Enemy draft — each slot has a suggested lane, tap to search (any hero can still fill it)</p>
   <div class="slots" id="slots"></div>
 
   <div class="results-head">
@@ -1497,8 +1401,6 @@ let activeLaneTab = null;      // currently selected lane tab in results
 let lastResults = null;        // cached computeResults() output
 let synergyMap = new Map();    // "hero_a|hero_b" -> synergy (bidirectional)
 let roleMatrix = new Map();    // "attacker_role|defender_role" -> points
-let banPhaseActive = false;    // ban phase toggle
-let banSlots = [null,null,null,null,null]; // up to 5 bans
 
 // preferred lane ordering when we can detect standard MLBB lane names
 const LANE_PRIORITY = ["exp","mid","jungle","gold","roam","support"];
@@ -1702,9 +1604,8 @@ function renderSearchList(i, query){
   if (!list) return;
   const q = query.trim().toLowerCase();
   const taken = new Set(slots.filter(Boolean));
-  const banSet = new Set(banSlots.filter(Boolean));
   const lane = LANES[i] || "";
-  let matches = heroes.filter(h => !taken.has(h.name) && !banSet.has(h.name));
+  let matches = heroes.filter(h => !taken.has(h.name));
   if (q) matches = matches.filter(h => h.name.toLowerCase().includes(q));
   matches.sort((a, b) => (laneRelevance(b, lane) - laneRelevance(a, lane)) || a.name.localeCompare(b.name));
   matches = matches.slice(0, 8);
@@ -2755,9 +2656,7 @@ function computeResults(){
   if (filled.length === 0) return null;
 
   const takenSet = new Set(filled);
-  const bannedNames = banSlots.filter(Boolean);
-  const bannedSet = new Set(bannedNames);
-  const candidates = heroNames.filter(n => !takenSet.has(n) && !bannedSet.has(n));
+  const candidates = heroNames.filter(n => !takenSet.has(n));
 
   const rows = candidates.map(name => {
     const breakdown = filled.map(enemy => ({
@@ -2772,7 +2671,7 @@ function computeResults(){
     const sMin = Math.min(...scores);
     const sMax = Math.max(...scores);
     // Vulnerability (how easily this hero is countered by remaining unpicked)
-    const rest = heroNames.filter(n => !takenSet.has(n) && n !== name && !bannedSet.has(n));
+    const rest = heroNames.filter(n => !takenSet.has(n) && n !== name);
     const vulnPairs = rest.map(r => ({ score: getScore(r, name), matched_rules: getMatchedRules(r, name) }));
     const vulnerability = rest.length > 0 ? normalizedScoreSum(vulnPairs) / rest.length : 0;
     // Pick urgency: high score + high vulnerability = pick early
@@ -2961,9 +2860,7 @@ function renderResults(){
 
   const results = computeResults();
   lastResults = results;
-  const banCount = banSlots.filter(Boolean).length;
-  const banSuffix = banCount ? ` · ${banCount} banned` : "";
-  resultsCount.textContent = `vs ${filled.length} pick${filled.length>1?"s":""} · ${mode === "sum" ? "summed" : "averaged"}${banSuffix}`;
+  resultsCount.textContent = `vs ${filled.length} pick${filled.length>1?"s":""} · ${mode === "sum" ? "summed" : "averaged"}`;
   if (finalBtn) finalBtn.style.display = "inline-block";
 
   if (!activeLaneTab && LANES.length) activeLaneTab = LANES[0];
@@ -2975,32 +2872,6 @@ function renderResults(){
     html += `<div class="results-subtitle">Top 5 — All Lanes</div>`;
     html += results.overall.map((r, i) => cardHTML(r, i, true)).join("");
   }
-
-  // --- Ban Priority: most threatening heroes if left unpicked ---
-  const takenSet = new Set(filled);
-  const bannedNames2 = banSlots.filter(Boolean);
-  const bannedSet2 = new Set(bannedNames2);
-  const remaining = heroNames.filter(n => !takenSet.has(n) && !bannedSet2.has(n));
-  const threats = remaining.map(name => ({
-    name,
-    threat: computeThreat(name, filled, remaining.filter(n => n !== name))
-  }));
-  threats.sort((a,b) => b.threat - a.threat);
-  const banTop = threats.slice(0, 5);
-  html += `<div class="results-subtitle ban-priority-title">Ban Priority — most threatening if left open</div>`;
-  html += `<div class="ban-grid">`;
-  banTop.forEach((t, i) => {
-    const h = heroInfo(t.name) || {};
-    const col = roleColor(h.role);
-    const cls = t.threat > 2 ? "high" : t.threat > 0.5 ? "med" : "";
-    html += `<div class="ban-item">
-      <span class="ban-rank">${i+1}</span>
-      <span class="ban-hero" style="color:${col}">${escapeHtml(t.name)}</span>
-      <span class="ban-role">${escapeHtml(h.role || "")}</span>
-      <span class="ban-threat ${cls}">${t.threat > 0 ? "+" : ""}${t.threat.toFixed(1)}</span>
-    </div>`;
-  });
-  html += `</div>`;
 
   if (LANES.length){
     html += `
@@ -3196,110 +3067,7 @@ function clearAll(){
   renderResults();
 }
 
-// ------------------------------------------------------------
-// Ban Phase
-// ------------------------------------------------------------
-function toggleBanPhase(){
-  banPhaseActive = !banPhaseActive;
-  const btn = document.getElementById("banToggle");
-  const area = document.getElementById("banSlotsArea");
-  btn.textContent = banPhaseActive ? "− Ban Phase" : "+ Ban Phase";
-  btn.classList.toggle("active", banPhaseActive);
-  area.style.display = banPhaseActive ? "block" : "none";
-  if (banPhaseActive) renderBanSlots();
-  renderResults();
-}
 
-function renderBanSlots(){
-  const el = document.getElementById("banSlots");
-  if (!el) return;
-  el.innerHTML = "";
-  banSlots.forEach((name, i) => {
-    const slotDiv = document.createElement("div");
-    slotDiv.className = "slot";
-    if (name){
-      const h = heroInfo(name) || {};
-      const col = roleColor(h.role);
-      slotDiv.innerHTML = `
-        <div class="hex banned" style="--role-col:${col}">
-          <span class="hex-slotnum">B${i+1}</span>
-          <div class="hex-name">${escapeHtml(name)}</div>
-          <div class="hex-role">${escapeHtml(h.role || "")}</div>
-          <button class="hex-clear" data-clear="${i}">unban</button>
-        </div>`;
-      slotDiv.querySelector(".hex-clear").addEventListener("click", (e)=>{
-        e.stopPropagation();
-        banSlots[i] = null;
-        renderBanSlots();
-        renderResults();
-      });
-    } else {
-      slotDiv.innerHTML = `
-        <div class="hex" data-open="ban-${i}">
-          <span class="hex-slotnum">B${i+1}</span>
-          <div class="hex-plus">+</div>
-          <div class="hex-empty-label">Ban Slot</div>
-          <div class="hex-flex-note">remove from pool</div>
-        </div>
-        <div class="search-pop" id="pop-ban-${i}">
-          <input type="text" placeholder="Search hero to ban…" data-input="ban-${i}" autocomplete="off">
-          <div class="search-list" data-list="ban-${i}"></div>
-        </div>`;
-      slotDiv.querySelector(".hex").addEventListener("click", ()=> openBanSearch(i));
-    }
-    el.appendChild(slotDiv);
-  });
-}
-
-function openBanSearch(i){
-  document.querySelectorAll(".search-pop.open").forEach(p => p.classList.remove("open"));
-  const pop = document.getElementById("pop-ban-" + i);
-  if (!pop) return;
-  pop.classList.add("open");
-  const input = pop.querySelector("input");
-  input.value = "";
-  renderBanSearchList(i, "");
-  setTimeout(()=> input.focus(), 0);
-  input.oninput = () => renderBanSearchList(i, input.value);
-  input.onkeydown = (e) => { if (e.key === "Escape") { document.querySelectorAll(".search-pop.open").forEach(p => p.classList.remove("open")); } };
-}
-
-function renderBanSearchList(i, query){
-  const list = document.querySelector(`.search-list[data-list="ban-${i}"]`);
-  if (!list) return;
-  // Exclude already-picked enemies, already-banned, and show all remaining heroes
-  const filledSlots = slots.filter(Boolean);
-  const filledSet = new Set(filledSlots);
-  const bannedAlready = new Set(banSlots.filter(Boolean));
-  const q = query.toLowerCase();
-  const filtered = heroNames
-    .filter(n => !filledSet.has(n) && !bannedAlready.has(n) && n.toLowerCase().includes(q))
-    .slice(0, 8);
-  list.innerHTML = filtered.length
-    ? filtered.map(n => {
-        const h = heroInfo(n) || {};
-        const col = roleColor(h.role);
-        return `<div class="search-item" data-name="${escapeHtml(n)}" style="--r-col:${col}">
-          <span>${escapeHtml(n)}</span>
-          <span class="role-chip">${escapeHtml(h.role || "")}</span>
-        </div>`;
-      }).join("")
-    : `<div class="search-item dim">${q ? "No match" : "No heroes left to ban"}</div>`;
-  list.querySelectorAll(".search-item").forEach(el => {
-    el.addEventListener("click", ()=>{
-      const name = el.dataset.name;
-      banSlots[i] = name;
-      renderBanSlots();
-      renderResults();
-    });
-  });
-}
-
-function clearBans(){
-  for (let i = 0; i < banSlots.length; i++) banSlots[i] = null;
-  renderBanSlots();
-  renderResults();
-}
 
 function escapeHtml(s){
   return String(s ?? "").replace(/[&<>"']/g, c => ({
