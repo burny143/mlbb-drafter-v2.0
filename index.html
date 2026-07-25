@@ -1894,30 +1894,16 @@ function fa_decidingFactor(totalA, totalB, aBreak, bBreak, winnerTeam){
   const avgB = bBreak.length ? totalB / bBreak.length : 0;
   const diff = totalA - totalB;
 
-  // Count how many matchups each team wins (per-hero vs per-hero comparison, A→B direction)
-  let winsA_dir1 = 0, winsB_dir1 = 0, ties1 = 0;
+  // Count matchups from A→B direction only (25 unique pairs for 5v5)
+  let winsA = 0, winsB = 0, ties = 0;
   aBreak.forEach(x => {
     (x.vs || []).forEach(v => {
-      if (v.score > 0.5) winsA_dir1++;
-      else if (v.score < -0.5) winsB_dir1++;
-      else ties1++;
+      if (v.score > 0.5) winsA++;
+      else if (v.score < -0.5) winsB++;
+      else ties++;
     });
   });
-  // B→A direction
-  let winsA_dir2 = 0, winsB_dir2 = 0, ties2 = 0;
-  bBreak.forEach(x => {
-    (x.vs || []).forEach(v => {
-      if (v.score > 0.5) winsB_dir2++;   // positive B score = B beats A
-      else if (v.score < -0.5) winsA_dir2++;
-      else ties2++;
-    });
-  });
-  // Aggregate: winsA = A beats B in either direction
-  const winsA = winsA_dir1 + winsA_dir2;
-  const winsB = winsB_dir1 + winsB_dir2;
-  const totalPairs = winsA + winsB + ties1 + ties2;
-  const theWinnerWins = winnerTeam === "A" ? winsA : winsB;
-  const theLoserWins = winnerTeam === "A" ? winsB : winsA;
+  const totalPairs = winsA + winsB + ties;
 
   // Biggest single swing
   const allPairs = [];
@@ -1933,13 +1919,15 @@ function fa_decidingFactor(totalA, totalB, aBreak, bBreak, winnerTeam){
 
   let sentences = [];
   if (totalPairs > 0){
-    const tiePart = ties1 + ties2 > 0 ? `, ${ties1 + ties2} tied` : "";
-    sentences.push(`Across <strong>${totalPairs}</strong> individual matchups, <strong>Team ${winnerTeam}</strong> won <strong>${theWinnerWins}</strong> while the opposing side took <strong>${theLoserWins}</strong>${tiePart}.`);
+    const tiePart = ties > 0 ? `, ${ties} tied` : "";
+    sentences.push(`Across <strong>${totalPairs}</strong> individual matchups, Team A won <strong>${winsA}</strong> while Team B won <strong>${winsB}</strong>${tiePart}.`);
     // If the winner won fewer matchups but won by bigger margins
-    if (theWinnerWins < theLoserWins && Math.abs(diff) > 5){
+    const winnerWins = winnerTeam === "A" ? winsA : winsB;
+    const loserWins = winnerTeam === "A" ? winsB : winsA;
+    if (winnerWins < loserWins && Math.abs(diff) > 5){
       sentences.push(`Although Team ${winnerTeam} won fewer individual matchups, their victories were by <strong>much wider margins</strong> — the matchups they lost were close, while the matchups they won were decisive blowouts.`);
-    } else if (theWinnerWins > theLoserWins + 5 && Math.abs(diff) < 10){
-      sentences.push(`Despite winning significantly more matchups (<strong>${theWinnerWins} vs ${theLoserWins}</strong>), the overall score gap is narrow — the losing team's wins were decisive while the winning team's wins were marginal.`);
+    } else if (winnerWins > loserWins + 5 && Math.abs(diff) < 10){
+      sentences.push(`Despite winning significantly more matchups (<strong>${winnerWins} vs ${loserWins}</strong>), the overall score gap is narrow — the losing team's wins were decisive while the winning team's wins were marginal.`);
     }
   }
 
