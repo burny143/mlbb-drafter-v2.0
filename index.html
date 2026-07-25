@@ -416,6 +416,11 @@
   }
   .final-reason b{ font-weight:600; color:var(--text); }
   .final-reason .vs{ color:var(--text-faint); }
+  .final-role-note{
+    font-size:9.5px;
+    color:var(--gold-dim);
+    margin-top:1px;
+  }
 
   /* ---------- results ---------- */
   .results-head{
@@ -1249,22 +1254,66 @@ function renderResults(){
   renderLaneSection();
 }
 
+function preferredRolesForLane(lane){
+  const l = lane.toLowerCase();
+  if (l.includes("exp")) return ["Fighter"];
+  if (l.includes("mid")) return ["Mage"];
+  if (l.includes("jung")) return ["Assassin"];
+  if (l.includes("gold")) return ["Marksman"];
+  if (l.includes("roam")) return ["Tank", "Support"];
+  return [];
+}
+
+function computeFinalLineup(){
+  if (!lastResults) return [];
+  const lanes = LANES.filter(l => lastResults.byLane[l] && lastResults.byLane[l].length > 0);
+  const used = new Set();
+  const picks = [];
+
+  // First pass: assign role-fitting heroes per lane
+  for (const lane of lanes) {
+    const candidates = lastResults.byLane[lane];
+    const prefs = preferredRolesForLane(lane);
+    let pick = null;
+    for (const c of candidates) {
+      if (used.has(c.name)) continue;
+      const h = heroInfo(c.name);
+      if (!h) continue;
+      if (prefs.length === 0 || prefs.includes(h.role) || prefs.includes(h.role2)) {
+        pick = c;
+        break;
+      }
+    }
+    if (!pick) {
+      for (const c of candidates) {
+        if (!used.has(c.name)) { pick = c; break; }
+      }
+    }
+    if (pick) {
+      used.add(pick.name);
+      picks.push({ lane, hero: pick });
+    }
+  }
+  return picks;
+}
+
 function openFinal(){
   if (!lastResults) return;
   const body = document.getElementById("finalBody");
-  const lanes = LANES.filter(l => lastResults.byLane[l] && lastResults.byLane[l].length > 0);
-  if (lanes.length === 0){
+  const picks = computeFinalLineup();
+  if (picks.length === 0){
     body.innerHTML = `<div class="empty-state">No lane-eligible counters found. Fill more enemy slots.</div>`;
     document.getElementById("finalModal").style.display = "flex";
     return;
   }
-  const topPicks = lanes.map(lane => lastResults.byLane[lane][0]);
-  let html = buildRoleCoverage(topPicks) + `<div class="final-summary">${buildFinalSummary(topPicks)}</div>`;
-  html += lanes.map(lane => {
-    const r = lastResults.byLane[lane][0];
+  const heroPicks = picks.map(p => p.hero);
+  let html = buildRoleCoverage(heroPicks) + `<div class="final-summary">${buildFinalSummary(heroPicks)}</div>`;
+  html += picks.map(({ lane, hero: r }) => {
     const h = heroInfo(r.name) || {};
     const col = roleColor(h.role);
-    // Collate explanations from every enemy matchup
+    const prefs = preferredRolesForLane(lane);
+    const roleMatch = prefs.includes(h.role) || prefs.includes(h.role2);
+    const roleNote = roleMatch ? "" : `<div class="final-role-note">(role preference: ${prefs.join(" / ")})</div>`;
     const reasons = r.breakdown
       .filter(b => b.matched_rules && b.matched_rules.length > 0)
       .flatMap(b => b.matched_rules.map(rule => {
@@ -1283,9 +1332,8 @@ function openFinal(){
         }
         return `<div class="final-reason"><span class="vs">vs ${escapeHtml(b.enemy)}</span> — ${tpl} <span class="vs">(${sign}${net})</span></div>`;
       }));
-    // Add a generic lane-fit note if no rule-based reasons
     if (reasons.length === 0){
-      reasons.push(`<div class="final-reason"><span class="vs">Recommended for ${escapeHtml(lane)} role based on aggregate scores.</span></div>`);
+      reasons.push(`<div class="final-reason"><span class="vs">Recommended for ${escapeHtml(lane)} based on scores.</span></div>`);
     }
     return `
       <div class="final-card">
@@ -1294,6 +1342,7 @@ function openFinal(){
           <div>
             <span class="final-card-hero" style="color:${col}">${escapeHtml(r.name)}</span>
             <span class="final-card-role">${escapeHtml(h.role || "")}${h.role2 ? " / " + escapeHtml(h.role2) : ""}</span>
+            ${roleNote}
           </div>
           <div class="final-card-reasons">${reasons.join("")}</div>
         </div>
