@@ -238,7 +238,68 @@ def extract_synergy_scores(wb) -> list[dict]:
 
 
 # ----------------------------------------------------------------------------
-# Upsert helper — supabase-py batches, chunked to stay well under request
+# Schema migration — ensures any new tables/columns from schema.sql exist
+# before the upsert.  Uses psql (PostgreSQL CLI) with a direct DB connection.
+# Falls back to a subprocess call consuming schema.sql.
+# ----------------------------------------------------------------------------
+_SCHEMA_SQL = Path(__file__).parent / "schema.sql"
+
+
+def migrate_schema():
+    """Run schema.sql against the Supabase DB to create tables/columns.
+
+    Requires SUPABASE_DB_PASSWORD env var (GitHub secret or .env).
+    The DB host/user/name are derived from SUPABASE_URL.
+    """
+    db_pass = os.environ.get("SUPABASE_DB_PASSWORD")
+    supabase_url = os.environ.get("SUPABASE_URL", "")
+
+    if not db_pass:
+        print("  SKIP schema migration: SUPABASE_DB_PASSWORD not set")
+        return False
+    if not _SCHEMA_SQL.exists():
+        print(f"  SKIP schema migration: {_SCHEMA_SQL} not found")
+        return False
+
+    # Derive project ref and construct DB URL
+    # SUPABASE_URL = https://<project-ref>.supabase.co
+    import re
+    m = re.match(r"https://([^.]+)\.", supabase_url)
+    if not m:
+        print(f"  SKIP schema migration: could not parse project ref from {supabase_url}")
+        return False
+    project_ref = m.group(1)
+
+    db_host = f"db.{project_ref}.supabase.co"
+    db_user = "postgres"
+    db_name = "postgres"
+    conn_str = f"postgresql://{db_user}:{db_pass}@{db_host}:5432/{db_name}"
+
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["psql", conn_str, "-f", str(_SCHEMA_SQL)],
+            capture_output=True, text=True, timeout=30,
+        )
+        if result.returncode != 0:
+            stderr = result.stderr.strip()
+            # "already exists" is harmless — our SQL uses IF NOT EXISTS
+            if "already exists" in stderr or "duplicate" in stderr.lower():
+                print("  Schema migration: OK (existing objects skipped)")
+            else:
+                print(f"  WARNING: psql had stderr output:\n{stderr}")
+        else:
+            print("  Schema migration: OK")
+        return True
+    except FileNotFoundError:
+        print("  SKIP schema migration: psql not installed on this machine")
+        return False
+    except subprocess.TimeoutExpired:
+        print("  WARNING: schema migration timed out — continuing anyway")
+        return False
+    except Exception as e:
+        print(f"  WARNING: schema migration failed ({e}) — continuing anyway")
+        return False
 # size limits for the larger tables (style_matrix ~ 484 rows, heroes ~ 133).
 # ----------------------------------------------------------------------------
 def upsert_in_chunks(client: Client, table: str, records: list[dict],
@@ -262,6 +323,9 @@ def main():
 
     print(f"Loading workbook: {xlsx_path}")
     wb = openpyxl.load_workbook(xlsx_path, data_only=True)
+
+    print("Running schema migration...")
+    migrate_schema()
 
     client = get_supabase_client()
 
