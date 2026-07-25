@@ -1983,6 +1983,25 @@ function fa_compositionBlurb(names, label){
   return lines.map(l => `<div class="fa-block-row">${l}</div>`).join("");
 }
 
+/**
+ * computeTeamSynergy: Compute all synergy pairs within a team.
+ * Returns { pairs: [{a, b, syn}], total: number }.
+ */
+function computeTeamSynergy(names){
+  const pairs = [];
+  let total = 0;
+  for (let i = 0; i < names.length; i++) {
+    for (let j = i + 1; j < names.length; j++) {
+      const s = getSynergy(names[i], names[j]);
+      if (s) {
+        pairs.push({ a: names[i], b: names[j], syn: s });
+        total += s;
+      }
+    }
+  }
+  return { pairs, total };
+}
+
 function fa_compSectionHTML(teamA, teamB){
   const wA = fa_compWarnings(teamA);
   const wB = fa_compWarnings(teamB);
@@ -1992,6 +2011,10 @@ function fa_compSectionHTML(teamA, teamB){
   const compA = teamCompositionScore(teamA);
   const compB = teamCompositionScore(teamB);
   const compDiff = compA - compB;
+
+  // Synergy for each team
+  const synA = computeTeamSynergy(teamA);
+  const synB = computeTeamSynergy(teamB);
 
   // Role advantage bar
   const maxRole = Math.max(Math.abs(roleAdv.diff), 1);
@@ -2006,6 +2029,12 @@ function fa_compSectionHTML(teamA, teamB){
   const raLabel = roleAdv.diff > 0.5 ? `Team A +${roleAdv.diff.toFixed(0)}` : roleAdv.diff < -0.5 ? `Team B +${(-roleAdv.diff).toFixed(0)}` : "Even";
   const tfLabel = tfA === tfB ? "Even" : `${tfA > tfB ? "Team A" : "Team B"} +${Math.abs(tfA - tfB).toFixed(0)}`;
 
+  // Helper to render synergy line for a team
+  function synHTML(syn) {
+    if (!syn || !syn.pairs.length) return "";
+    return `<div class="fa-block-row">Synergy: <strong>+${syn.total.toFixed(0)}</strong> — ${syn.pairs.map(p => `${escapeHtml(p.a)} + ${escapeHtml(p.b)}`).join(", ")}</div>`;
+  }
+
   return `
     <div class="fa-compare">
       <div class="fa-block">
@@ -2015,6 +2044,7 @@ function fa_compSectionHTML(teamA, teamB){
           Composition score: <strong style="color:${compA >= 10 ? 'var(--jade)' : compA >= 0 ? 'var(--text)' : 'var(--crimson)'}">${compA > 0 ? "+" : ""}${compA.toFixed(0)}</strong>
           · Teamfight: <strong>${tfA > 0 ? "+" : ""}${tfA.toFixed(0)}</strong>
         </div>
+        ${synHTML(synA)}
         ${wA.length ? `<div class="fa-block-row" style="margin-top:6px"><span style="color:var(--crimson)">⚠</span> ${wA.join("</div><div class=\"fa-block-row\" style=\"margin-top:4px\"><span style=\"color:var(--crimson)\">⚠</span> ")}</div>` : ""}
       </div>
       <div class="fa-vs-badge">VS</div>
@@ -2025,6 +2055,7 @@ function fa_compSectionHTML(teamA, teamB){
           Composition score: <strong style="color:${compB >= 10 ? 'var(--jade)' : compB >= 0 ? 'var(--text)' : 'var(--crimson)'}">${compB > 0 ? "+" : ""}${compB.toFixed(0)}</strong>
           · Teamfight: <strong>${tfB > 0 ? "+" : ""}${tfB.toFixed(0)}</strong>
         </div>
+        ${synHTML(synB)}
         ${wB.length ? `<div class="fa-block-row" style="margin-top:6px"><span style="color:var(--crimson)">⚠</span> ${wB.join("</div><div class=\"fa-block-row\" style=\"margin-top:4px\"><span style=\"color:var(--crimson)\">⚠</span> ")}</div>` : ""}
       </div>
     </div>
@@ -2122,36 +2153,6 @@ function fa_rulesSection(aBreak, bBreak){
     <div class="fa-section-title">Key Counter Interactions (${top.length})</div>
     <div class="fa-rules-list">${top.map(r => fa_ruleTemplate(r, r.attacker, r.defender, r.team)).join("")}</div>
   </div>`;
-}
-
-/**
- * fa_synergySection: Show known synergy combos for a team.
- * Returns HTML string with the pair list and total, or empty string if none.
- */
-function fa_synergySection(names, label){
-  const pairs = [];
-  let total = 0;
-  for (let i = 0; i < names.length; i++) {
-    for (let j = i + 1; j < names.length; j++) {
-      const s = getSynergy(names[i], names[j]);
-      if (s) {
-        pairs.push({ a: names[i], b: names[j], syn: s });
-        total += s;
-      }
-    }
-  }
-  if (!pairs.length) return "";
-  const cls = total > 20 ? "high" : total > 8 ? "med" : "";
-  const pairsHtml = pairs.map(p =>
-    `<div class="syn-pair">+${p.syn.toFixed(0)} <span class="syn-pair-names">${escapeHtml(p.a)} + ${escapeHtml(p.b)}</span></div>`
-  ).join("");
-  return `
-    <div class="fa-section">
-      <div class="fa-section-title">${escapeHtml(label)} Synergy</div>
-      <div class="syn-sub">Known combo bonuses within the team</div>
-      <div class="syn-total ${cls}">Total: +${total.toFixed(0)}</div>
-      ${pairsHtml}
-    </div>`;
 }
 
 function fa_impactSection(aBreak, bBreak, winnerTeam){
@@ -2373,9 +2374,6 @@ function buildFightAnalysis(teamA, teamB, aBreak, bBreak, totalA, totalB, compA,
       </div>
 
       ${fa_compSectionHTML(aNames, bNames)}
-
-      ${fa_synergySection(aNames, "Team A")}
-      ${fa_synergySection(bNames, "Team B")}
 
       ${fa_matchupRows(aNames, bNames, aBreak, bBreak)}
 
