@@ -2080,7 +2080,7 @@ function fa_matchupRows(a, b, aBreak, bBreak){
 function fa_ruleTemplate(r, attacker, defender, team){
   const val = escapeHtml(r.value || "");
   const note = escapeHtml(r.note || "");
-  const net = (r.bonus || 0) - (r.penalty || 0);
+  const net = r.effectiveNet !== undefined ? r.effectiveNet : ((r.bonus || 0) - (r.penalty || 0));
   const sign = net >= 0 ? "+" : "";
   const teamCls = team === "A" ? "a-team" : "b-team";
   return `<div class="fa-rule-item ${teamCls}"><span class="who">${escapeHtml(attacker)}</span> <span class="vs">vs</span> <span class="who">${escapeHtml(defender)}</span> — ${note} <span class="vs">(net ${sign}${net})</span></div>`;
@@ -2108,7 +2108,7 @@ function fa_rulesSection(aBreak, bBreak){
     return true;
   });
   // Limit to most impactful
-  const top = unique.sort((a,b) => Math.abs((b.bonus||0)-(b.penalty||0)) - Math.abs((a.bonus||0)-(a.penalty||0))).slice(0, 6);
+  const top = unique.sort((a,b) => Math.abs(b.effectiveNet ?? ((b.bonus||0)-(b.penalty||0))) - Math.abs(a.effectiveNet ?? ((a.bonus||0)-(a.penalty||0)))).slice(0, 6);
   return `<div class="fa-section">
     <div class="fa-section-title">Key Counter Interactions (${top.length})</div>
     <div class="fa-rules-list">${top.map(r => fa_ruleTemplate(r, r.attacker, r.defender, r.team)).join("")}</div>
@@ -2441,19 +2441,19 @@ function getMatchedRules(attacker, defender){
 }
 
 /**
- * computeNormalizedTotal: Compute a hero's total score against a set of enemies,
- * applying diminishing returns to hard counter rules that fire against multiple
- * enemies. Each rule's contribution per-pair is divided by sqrt(occurrence count),
- * so a broad rule matching 4 enemies contributes 50% per matchup instead of 100%.
+ * normalizedScoreSum: Compute the sum of an array of {score, matched_rules} pairs
+ * with diminishing returns applied to hard counter rules that fire against
+ * multiple items in the array. Each rule's contribution per-pair is divided by
+ * sqrt(occurrence count), so a broad rule matching 4 items contributes 50% per
+ * matchup instead of 100%.
  *
- * Also mutates each breakdown item's .score to the adjusted value so per-enemy
- * display values sum to the normalized total.
+ * Mutates each pair's .score to the adjusted value (and sets .effectiveNet on
+ * each rule) so downstream display values remain consistent with the total.
  */
-function computeNormalizedTotal(heroName, breakdown){
-  if (!breakdown || !breakdown.length) return 0;
-  // Count how many enemies each distinct rule (type + value) matches
+function normalizedScoreSum(pairs){
+  if (!pairs || !pairs.length) return 0;
   const ruleMatchCount = {};
-  breakdown.forEach(p => {
+  pairs.forEach(p => {
     const seen = new Set();
     (p.matched_rules || []).forEach(r => {
       const key = r.type + "|" + r.value;
@@ -2461,19 +2461,30 @@ function computeNormalizedTotal(heroName, breakdown){
     });
   });
   let total = 0;
-  breakdown.forEach(p => {
+  pairs.forEach(p => {
     let rawHCB = 0;
     let adjustedHCB = 0;
     (p.matched_rules || []).forEach(r => {
       const key = r.type + "|" + r.value;
       const amount = (r.bonus || 0) - (r.penalty || 0);
       rawHCB += amount;
-      adjustedHCB += amount / Math.sqrt(ruleMatchCount[key] || 1);
+      const effective = amount / Math.sqrt(ruleMatchCount[key] || 1);
+      adjustedHCB += effective;
+      r.effectiveNet = Math.round(effective * 10) / 10;
     });
     p.score = p.score - rawHCB + adjustedHCB;
     total += p.score;
   });
   return total;
+}
+
+/**
+ * computeNormalizedTotal: Compute a hero's total score against a set of
+ * enemies. Convenience wrapper over normalizedScoreSum for the common case
+ * where you have a breakdown array keyed by enemy name.
+ */
+function computeNormalizedTotal(heroName, breakdown){
+  return normalizedScoreSum(breakdown);
 }
 
 function getSynergy(a, b){
@@ -2488,12 +2499,12 @@ function getSynergy(a, b){
  */
 function computeThreat(candidate, enemies, remaining){
   if (enemies.length === 0 || remaining.length === 0) return 0;
-  let counterSum = 0;
-  for (const e of enemies) counterSum += getScore(candidate, e);
-  let vulnSum = 0;
-  for (const r of remaining){
-    if (r !== candidate) vulnSum += getScore(r, candidate);
-  }
+  const counterSum = normalizedScoreSum(
+    enemies.map(e => ({ score: getScore(candidate, e), matched_rules: getMatchedRules(candidate, e) }))
+  );
+  const vulnSum = normalizedScoreSum(
+    remaining.filter(r => r !== candidate).map(r => ({ score: getScore(r, candidate), matched_rules: getMatchedRules(r, candidate) }))
+  );
   const avgCounter = counterSum / enemies.length;
   const avgVuln = vulnSum / remaining.length;
   return avgCounter - avgVuln;
@@ -2609,9 +2620,8 @@ function computeResults(){
     const sMax = Math.max(...scores);
     // Vulnerability (how easily this hero is countered by remaining unpicked)
     const rest = heroNames.filter(n => !takenSet.has(n) && n !== name && !bannedSet.has(n));
-    let vulnSum = 0;
-    for (const r of rest) vulnSum += getScore(r, name);
-    const vulnerability = rest.length > 0 ? vulnSum / rest.length : 0;
+    const vulnPairs = rest.map(r => ({ score: getScore(r, name), matched_rules: getMatchedRules(r, name) }));
+    const vulnerability = rest.length > 0 ? normalizedScoreSum(vulnPairs) / rest.length : 0;
     // Pick urgency: high score + high vulnerability = pick early
     const pickUrgency = vulnerability > 0 ? agg / (1 + vulnerability / 15) : agg;
     return { name, agg, breakdown, sMin, sMax, pickUrgency, vulnerability };
@@ -2959,7 +2969,7 @@ function openFinal(){
         const ruleParts = b.matched_rules.map(rule => {
           const val = escapeHtml(rule.value);
           const note = escapeHtml(rule.note);
-          const net = (rule.bonus || 0) - (rule.penalty || 0);
+          const net = rule.effectiveNet !== undefined ? rule.effectiveNet : ((rule.bonus || 0) - (rule.penalty || 0));
           const sign = net >= 0 ? "+" : "";
           let tpl = "";
           switch(rule.type){
