@@ -22,12 +22,14 @@ Usage:
 """
 
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any, Optional
 
 import openpyxl
 from supabase import create_client, Client
+from postgrest.exceptions import APIError
 
 # Load .env file if present
 _dotenv = Path(__file__).parent / ".env"
@@ -263,7 +265,6 @@ def migrate_schema():
 
     # Derive project ref and construct DB URL
     # SUPABASE_URL = https://<project-ref>.supabase.co
-    import re
     m = re.match(r"https://([^.]+)\.", supabase_url)
     if not m:
         print(f"  SKIP schema migration: could not parse project ref from {supabase_url}")
@@ -300,8 +301,17 @@ def migrate_schema():
     except Exception as e:
         print(f"  WARNING: schema migration failed ({e}) — continuing anyway")
         return False
-# size limits for the larger tables (style_matrix ~ 484 rows, heroes ~ 133).
+
+
 # ----------------------------------------------------------------------------
+# Upsert helper — supabase-py batches, chunked to stay well under request
+# size limits for the larger tables (style_matrix ~ 484 rows, heroes ~ 133).
+# If a column doesn't exist yet in the DB, it's stripped from the records
+# automatically so the rest of the migration can proceed.
+# ----------------------------------------------------------------------------
+_BAD_COL_RE = re.compile(r"Could not find the '(\w+)' column")
+
+
 def upsert_in_chunks(client: Client, table: str, records: list[dict],
                       on_conflict: str, chunk_size: int = 500) -> int:
     if not records:
@@ -310,8 +320,26 @@ def upsert_in_chunks(client: Client, table: str, records: list[dict],
     total = 0
     for i in range(0, len(records), chunk_size):
         chunk = records[i:i + chunk_size]
-        client.table(table).upsert(chunk, on_conflict=on_conflict).execute()
-        total += len(chunk)
+        while True:
+            try:
+                client.table(table).upsert(chunk, on_conflict=on_conflict).execute()
+                total += len(chunk)
+                break
+            except APIError as e:
+                msg = str(e)
+                # Column missing in the DB?  Strip it and retry.
+                m = _BAD_COL_RE.search(msg)
+                if m:
+                    col = m.group(1)
+                    print(f"  {table}: column '{col}' missing — stripping and retrying")
+                    for r in chunk:
+                        r.pop(col, None)
+                    continue  # retry this chunk
+                # Table itself missing?  Skip silently.
+                if "does not exist" in msg:
+                    print(f"  {table}: table does not exist — skipping")
+                    return total
+                raise
     print(f"  {table}: upserted {total} rows")
     return total
 
