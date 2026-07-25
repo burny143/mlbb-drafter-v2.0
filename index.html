@@ -1339,7 +1339,7 @@ async function loadData(){
     statusEl.textContent = "loading heroes…";
     const { data: heroRows, error: heroErr } = await client
       .from("heroes")
-      .select("name, role, role2, lane1, lane2, damage_type, style1, style2, has_antiheal, has_mobility")
+      .select("name, role, role2, lane1, lane2, damage_type, style1, style2, has_antiheal, spike_order")
       .order("name");
     if (heroErr) throw heroErr;
     heroes = heroRows;
@@ -1692,7 +1692,12 @@ function fa_spikeDesc(names){
 }
 
 function fa_mobilityTag(names){
-  return names.some(n => { const h = heroInfo(n); return h && h.has_mobility; });
+  const MOBILITY_TAGS = new Set(["Mobile", "Dash", "Blink", "Assassin", "Roam"]);
+  return names.some(n => {
+    const h = heroInfo(n);
+    if (!h) return false;
+    return MOBILITY_TAGS.has(h.style1) || MOBILITY_TAGS.has(h.style2) || MOBILITY_TAGS.has(h.role) || MOBILITY_TAGS.has(h.role2);
+  });
 }
 
 function fa_antihealTag(names){
