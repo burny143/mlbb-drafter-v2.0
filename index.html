@@ -2164,6 +2164,12 @@ function fa_decidingFactor(totalA, totalB, aBreak, bBreak, winnerTeam, aNames, b
   const avgA = aBreak.length ? totalA / aBreak.length : 0;
   const avgB = bBreak.length ? totalB / bBreak.length : 0;
   const diff = totalA - totalB;
+  const absDiff = Math.abs(diff);
+
+  // Composition quality — used to check if the matchup verdict and
+  // team-structure analysis agree or contradict each other.
+  const compA = teamCompositionScore(aNames);
+  const compB = teamCompositionScore(bNames);
 
   // Role advantage context
   const roleAdv = computeRoleAdvantage(aNames, bNames);
@@ -2197,6 +2203,19 @@ function fa_decidingFactor(totalA, totalB, aBreak, bBreak, winnerTeam, aNames, b
   const best = allSorted[0];
   const worst = allSorted[allSorted.length - 1];
 
+  // Build a concise composition-warning string for narrative use
+  function compFlawSummary(names){
+    const roles = names.map(n => { const h = heroInfo(n); return h ? h.role : null; }).filter(Boolean);
+    const counts = {};
+    roles.forEach(r => { counts[r] = (counts[r] || 0) + 1; });
+    const parts = [];
+    const stacked = Object.entries(counts).filter(([,c]) => c >= 3).map(([r,c]) => `${c}× ${r}`);
+    if (stacked.length) parts.push(stacked.join(" + "));
+    if (!roles.includes("Tank")) parts.push("no tank");
+    if (!names.some(n => { const h = heroInfo(n); return h && (h.role === "Tank" || h.role === "Support"); })) parts.push("no roamer");
+    return parts.length ? parts.join(", ") : "";
+  }
+
   let sentences = [];
   if (totalPairs > 0){
     const tiePart = ties > 0 ? `, ${ties} tied` : "";
@@ -2204,9 +2223,9 @@ function fa_decidingFactor(totalA, totalB, aBreak, bBreak, winnerTeam, aNames, b
     // If the winner won fewer matchups but won by bigger margins
     const winnerWins = winnerTeam === "A" ? winsA : winsB;
     const loserWins = winnerTeam === "A" ? winsB : winsA;
-    if (winnerWins < loserWins && Math.abs(diff) > 5){
+    if (winnerWins < loserWins && absDiff > 5){
       sentences.push(`Although Team ${winnerTeam} won fewer individual matchups, their victories were by <strong>much wider margins</strong> — the matchups they lost were close, while the matchups they won were decisive blowouts.`);
-    } else if (winnerWins > loserWins + 5 && Math.abs(diff) < 10){
+    } else if (winnerWins > loserWins + 5 && absDiff < 10){
       sentences.push(`Despite winning significantly more matchups (<strong>${winnerWins} vs ${loserWins}</strong>), the overall score gap is narrow — the losing team's wins were decisive while the winning team's wins were marginal.`);
     }
   }
@@ -2222,6 +2241,31 @@ function fa_decidingFactor(totalA, totalB, aBreak, bBreak, winnerTeam, aNames, b
     }
   }
 
+  // --- Composition vs matchups tension analysis ---
+  // If the winner's composition score is lower than the loser's, the
+  // matchup scoreboard and the composition analysis disagree. Explain why.
+  const winnerComp = winnerTeam === "A" ? compA : compB;
+  const loserComp = winnerTeam === "A" ? compB : compA;
+  const winnerFlaws = compFlawSummary(winnerTeam === "A" ? aNames : bNames);
+
+  if (winnerComp < loserComp && absDiff > 5){
+    // Winner has the worse team structure but dominates on individual matchups
+    const flawLead = winnerFlaws ? ` (${winnerFlaws})` : "";
+    sentences.push(
+      `Despite Team ${winnerTeam}'s structural disadvantage${flawLead} ` +
+      `— composition scores ${winnerComp > 0 ? "+" : ""}${winnerComp.toFixed(0)} ` +
+      `vs Team ${winnerTeam === "A" ? "B" : "A"}'s ${loserComp > 0 ? "+" : ""}${loserComp.toFixed(0)} — ` +
+      `their individual counter matchups are overwhelmingly favorable and overcome the team-comp gap on paper. ` +
+      `Team ${winnerTeam === "A" ? "B" : "A"} has the better-structured lineup and may close this gap significantly in organized play.`
+    );
+  } else if (winnerComp > loserComp + 5){
+    // Composition and matchups agree — winner dominates in both
+    sentences.push(
+      `Team ${winnerTeam} holds the edge in <strong>both</strong> individual matchups and team composition ` +
+      `(${winnerComp > 0 ? "+" : ""}${winnerComp.toFixed(0)} vs ${loserComp > 0 ? "+" : ""}${loserComp.toFixed(0)}).`
+    );
+  }
+
   // Role advantage and teamfight potential context
   if (roleEdge) sentences.push(roleEdge.trim());
   if (tfEdge) sentences.push(tfEdge.trim());
@@ -2230,10 +2274,22 @@ function fa_decidingFactor(totalA, totalB, aBreak, bBreak, winnerTeam, aNames, b
     const favoredTeam = biggest.score > 0 ? biggest.team : (biggest.team === "A" ? "B" : "A");
     sentences.push(`The largest single swing was <strong>${escapeHtml(biggest.attacker)}</strong> vs <strong>${escapeHtml(biggest.defender)}</strong> at ${biggest.score > 0 ? "+" : ""}${biggest.score.toFixed(1)} favoring <strong>Team ${favoredTeam}</strong>.`);
   }
-  if (Math.abs(diff) > 10){
-    sentences.push(`The <strong>${Math.abs(diff).toFixed(1)}-point gap</strong> reflects a lopsided composition matchup — the winning team's picks align more favorably against the opposing roster.`);
-  } else if (Math.abs(diff) > 3){
-    sentences.push(`The <strong>${Math.abs(diff).toFixed(1)}-point margin</strong> comes down to a few critical counter interactions tipping the scale.`);
+
+  // --- Closing verdict ---
+  if (absDiff > 10){
+    if (winnerComp < loserComp){
+      sentences.push(
+        `The <strong>${absDiff.toFixed(1)}-point gap</strong> is driven by individual counter matchups, not team composition ` +
+        `— each hero's precomputed 1v1 score against the opposing roster, independent of role balance.`
+      );
+    } else {
+      sentences.push(
+        `The <strong>${absDiff.toFixed(1)}-point gap</strong> reflects a comprehensive advantage — ` +
+        `Team ${winnerTeam} leads in both individual matchups and team structure.`
+      );
+    }
+  } else if (absDiff > 3){
+    sentences.push(`The <strong>${absDiff.toFixed(1)}-point margin</strong> comes down to a few critical counter interactions tipping the scale.`);
   } else {
     sentences.push(`The fight is <strong>extremely close</strong> — individual execution and draft order nuance will decide the outcome beyond these precomputed scores.`);
   }
@@ -2336,13 +2392,13 @@ function runFight(){
   const aBreak = teamA.map(name => {
     if (!name) return null;
     const vs = b.map(def => ({ defender: def, score: getScore(name, def), matched_rules: getMatchedRules(name, def) }));
-    return { name, total: vs.reduce((s,x)=>s+x.score,0), vs };
+    return { name, total: computeNormalizedTotal(name, vs), vs };
   }).filter(Boolean).sort((x,y) => y.total - x.total);
 
   const bBreak = teamB.map(name => {
     if (!name) return null;
     const vs = a.map(def => ({ defender: def, score: getScore(name, def), matched_rules: getMatchedRules(name, def) }));
-    return { name, total: vs.reduce((s,x)=>s+x.score,0), vs };
+    return { name, total: computeNormalizedTotal(name, vs), vs };
   }).filter(Boolean).sort((x,y) => y.total - x.total);
 
   const totalA = aBreak.reduce((s,x)=>s+x.total,0);
@@ -2383,6 +2439,43 @@ function getMatchedRules(attacker, defender){
   const v = scoreMap.get(attacker + "|" + defender);
   return v ? v.matched_rules : [];
 }
+
+/**
+ * computeNormalizedTotal: Compute a hero's total score against a set of enemies,
+ * applying diminishing returns to hard counter rules that fire against multiple
+ * enemies. Each rule's contribution per-pair is divided by sqrt(occurrence count),
+ * so a broad rule matching 4 enemies contributes 50% per matchup instead of 100%.
+ *
+ * Also mutates each breakdown item's .score to the adjusted value so per-enemy
+ * display values sum to the normalized total.
+ */
+function computeNormalizedTotal(heroName, breakdown){
+  if (!breakdown || !breakdown.length) return 0;
+  // Count how many enemies each distinct rule (type + value) matches
+  const ruleMatchCount = {};
+  breakdown.forEach(p => {
+    const seen = new Set();
+    (p.matched_rules || []).forEach(r => {
+      const key = r.type + "|" + r.value;
+      if (!seen.has(key)) { seen.add(key); ruleMatchCount[key] = (ruleMatchCount[key] || 0) + 1; }
+    });
+  });
+  let total = 0;
+  breakdown.forEach(p => {
+    let rawHCB = 0;
+    let adjustedHCB = 0;
+    (p.matched_rules || []).forEach(r => {
+      const key = r.type + "|" + r.value;
+      const amount = (r.bonus || 0) - (r.penalty || 0);
+      rawHCB += amount;
+      adjustedHCB += amount / Math.sqrt(ruleMatchCount[key] || 1);
+    });
+    p.score = p.score - rawHCB + adjustedHCB;
+    total += p.score;
+  });
+  return total;
+}
+
 function getSynergy(a, b){
   if (a === b) return 0;
   return synergyMap.get(a + "|" + b) || 0;
@@ -2508,9 +2601,9 @@ function computeResults(){
       score: getScore(name, enemy),
       matched_rules: getMatchedRules(name, enemy)
     }));
-    const total = breakdown.reduce((a,b)=>a+b.score, 0);
+    const total = computeNormalizedTotal(name, breakdown);
     const agg = mode === "avg" ? total / filled.length : total;
-    // Score spread
+    // Score spread (uses adjusted scores from computeNormalizedTotal)
     const scores = breakdown.map(b => b.score);
     const sMin = Math.min(...scores);
     const sMax = Math.max(...scores);
