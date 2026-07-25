@@ -1950,7 +1950,8 @@ function fa_compWarnings(names){
       warnings.push(`<strong>${count}× ${role}</strong> — critically lacks role diversity. One-dimensional compositions are highly exploitable regardless of individual counter matchups.`);
     }
   }
-  if (!roles.includes("Tank")){
+  const hasTank = names.some(n => { const h = heroInfo(n); return h && (h.role === "Tank" || h.role2 === "Tank" || (h.durability || 0) >= 70); });
+  if (!hasTank){
     warnings.push(`<strong>No tank</strong> — lacks frontline engage, peel, and vision control.`);
   }
   const magicUser = names.some(n => { const h = heroInfo(n); return h && h.damage_type === "Magic"; });
@@ -1960,8 +1961,15 @@ function fa_compWarnings(names){
   } else if (!physUser && magicUser){
     warnings.push(`<strong>All magic damage</strong> — the enemy can stack Athena's Shield + Radiant Armor with zero downside.`);
   }
-  const nonRoam = names.filter(n => { const h = heroInfo(n); return h && (h.role === "Tank" || h.role === "Support"); });
-  if (nonRoam.length === 0){
+  // Check for roamer presence: role as Tank/Support, OR role2 as Tank/Support, OR lane assigned to Roaming
+  const hasRoamer = names.some(n => {
+    const h = heroInfo(n);
+    if (!h) return false;
+    return h.role === "Tank" || h.role === "Support"
+        || h.role2 === "Tank" || h.role2 === "Support"
+        || h.lane1 === "Roaming" || h.lane2 === "Roaming";
+  });
+  if (!hasRoamer){
     warnings.push(`<strong>No roamer</strong> — no dedicated vision-giver or initiator.`);
   }
   return warnings;
@@ -2685,14 +2693,6 @@ function compositionPenalty(names){
   const roleCounts = {};
   primaryRoles.forEach(r => { roleCounts[r] = (roleCounts[r] || 0) + 1; });
 
-  // All roles (primary + secondary) for coverage checks
-  const allRoles = heroes.flatMap(h => {
-    const r = [];
-    if (h.role) r.push(h.role);
-    if (h.role2) r.push(h.role2);
-    return r;
-  });
-
   // --- Role stacking (primary role only) ---
   for (const [role, count] of Object.entries(roleCounts)){
     if (count >= 5)      { total += 90; reasons.push(`5× ${role}: -90`); }
@@ -2700,30 +2700,39 @@ function compositionPenalty(names){
     else if (count >= 3) { total += 30; reasons.push(`3× ${role}: -30`); }
   }
 
-  // --- Missing critical roles (checks both primary and secondary) ---
-  const hasTank = allRoles.includes("Tank");
-  const hasSupport = allRoles.includes("Support");
-  const hasFighter = allRoles.includes("Fighter");
-  const hasMM = allRoles.includes("Marksman");
-  const hasMage = allRoles.includes("Mage");
+  // --- Missing critical roles ---
+  // For role coverage, check both primary+secondary roles, plus durability
+  // (>= 70 = tanky enough to frontline) and lane assignments (Roaming = roamer)
+  const tankCoverage = heroes.some(h => h.role === "Tank" || h.role2 === "Tank" || (h.durability || 0) >= 70);
+  const supportCoverage = heroes.some(h => h.role === "Support" || h.role2 === "Support");
+  const fighterCoverage = heroes.some(h => h.role === "Fighter" || h.role2 === "Fighter");
+  const mmCoverage = heroes.some(h => h.role === "Marksman" || h.role2 === "Marksman");
+  const mageCoverage = heroes.some(h => h.role === "Mage" || h.role2 === "Mage");
 
-  if (!hasTank && !hasSupport) {
+  // Roamer: Tank or Support by role, OR any hero with a lane assigned to Roaming
+  const roamerCoverage = heroes.some(h =>
+    h.role === "Tank" || h.role === "Support"
+    || h.role2 === "Tank" || h.role2 === "Support"
+    || h.lane1 === "Roaming" || h.lane2 === "Roaming"
+  );
+
+  if (!roamerCoverage) {
     total += 25;
     reasons.push("No roamer (Tank or Support): -25");
-  } else if (!hasTank) {
+  } else if (!tankCoverage) {
     total += 12;
     reasons.push("No Tank: -12");
-  } else if (!hasSupport) {
+  } else if (!supportCoverage) {
     total += 8;
     reasons.push("No Support: -8");
   }
 
-  if (!hasMM && !hasMage) {
+  if (!mmCoverage && !mageCoverage) {
     total += 20;
     reasons.push("No sustained damage source (Marksman or Mage): -20");
   }
 
-  if (!hasFighter) {
+  if (!fighterCoverage) {
     total += 8;
     reasons.push("No Fighter: -8");
   }
