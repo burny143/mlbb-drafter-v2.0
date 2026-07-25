@@ -2505,10 +2505,12 @@ function setMode(m){
 // scoring / results
 // ------------------------------------------------------------
 const BAR_SCALE = 120; // score magnitude that fills half the bar track
+const MATCHUP_CAP = 30; // clamp individual matchup scores to [-30, +30]
 
 function getScore(attacker, defender){
   const v = scoreMap.get(attacker + "|" + defender);
-  return typeof v?.score === "number" ? v.score : 0;
+  const raw = typeof v?.score === "number" ? v.score : 0;
+  return Math.max(-MATCHUP_CAP, Math.min(MATCHUP_CAP, raw));
 }
 function getMatchedRules(attacker, defender){
   const v = scoreMap.get(attacker + "|" + defender);
