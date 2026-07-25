@@ -653,6 +653,224 @@
   }
   .status-bar.error{ color:var(--crimson); }
 
+  /* ---------- page tabs ---------- */
+  .page-tabs{
+    display:flex;
+    gap:6px;
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:9px;
+    padding:4px;
+    margin-bottom:28px;
+    width:fit-content;
+  }
+  .page-tab{
+    font-family:'Rajdhani',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    background:transparent;
+    border:none;
+    color:var(--text-dim);
+    padding:9px 20px;
+    border-radius:6px;
+    cursor:pointer;
+    transition:background .15s,color .15s;
+  }
+  .page-tab:hover{ color:var(--text); }
+  .page-tab.active{
+    background:var(--gold);
+    color:#181206;
+  }
+
+  /* ---------- team fight page ---------- */
+  .fight-teams-wrap{
+    display:flex;
+    align-items:center;
+    gap:20px;
+  }
+  .fight-team-block{ flex:1; min-width:0; }
+  .team-a-label{ color:var(--role-tank); }
+  .team-b-label{ color:var(--crimson); text-align:right; }
+  .fight-vs-divider{
+    font-family:'Rajdhani',sans-serif;
+    font-weight:700;
+    font-size:18px;
+    color:var(--text-faint);
+    letter-spacing:0.08em;
+    padding-top:14px;
+    flex-shrink:0;
+  }
+
+  .fight-actions{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    margin:32px 0 36px;
+  }
+  .fight-btn{
+    font-family:'Rajdhani',sans-serif;
+    font-weight:700;
+    font-size:18px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    background:linear-gradient(135deg, var(--gold), var(--gold-dim));
+    color:#181206;
+    border:none;
+    border-radius:9px;
+    padding:14px 40px;
+    cursor:pointer;
+    box-shadow:0 8px 24px rgba(212,169,78,0.25);
+    transition:transform .12s, box-shadow .12s;
+  }
+  .fight-btn:hover{ transform:translateY(-1px); box-shadow:0 10px 28px rgba(212,169,78,0.35); }
+  .fight-btn:active{ transform:translateY(0); }
+  .fight-clear-btn{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    background:none;
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    border-radius:7px;
+    padding:10px 16px;
+    cursor:pointer;
+    transition:border-color .15s, color .15s;
+  }
+  .fight-clear-btn:hover{ border-color:var(--crimson); color:var(--crimson); }
+
+  .fight-verdict{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:22px 24px;
+    text-align:center;
+    margin-bottom:24px;
+    animation:fadeIn .35s ease both;
+  }
+  .fight-verdict.a-win{ border-color:var(--role-tank); }
+  .fight-verdict.b-win{ border-color:var(--crimson); }
+  .fight-verdict-title{
+    font-family:'Rajdhani',sans-serif;
+    font-weight:700;
+    font-size:28px;
+    text-transform:uppercase;
+    letter-spacing:0.02em;
+    margin-bottom:4px;
+  }
+  .fight-verdict.a-win .fight-verdict-title{ color:var(--role-tank); }
+  .fight-verdict.b-win .fight-verdict-title{ color:var(--crimson); }
+  .fight-verdict-sub{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--text-faint);
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    margin-bottom:18px;
+  }
+  .fight-tug-track{
+    position:relative;
+    height:14px;
+    background:var(--bg-slot);
+    border:1px solid var(--border);
+    border-radius:7px;
+    overflow:hidden;
+    margin-bottom:8px;
+  }
+  .fight-tug-fill{
+    position:absolute;
+    top:0; bottom:0; left:0;
+    background:linear-gradient(90deg, var(--role-tank), var(--crimson));
+    transition:width .4s ease;
+  }
+  .fight-tug-mid{
+    position:absolute;
+    top:0; bottom:0; left:50%;
+    width:2px;
+    background:rgba(255,255,255,0.35);
+  }
+  .fight-tug-labels{
+    display:flex;
+    justify-content:space-between;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--text-dim);
+  }
+  .fight-deciding{
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px solid var(--border-soft);
+    font-size:12.5px;
+    color:var(--text-dim);
+  }
+  .fight-deciding strong{ color:var(--text); }
+
+  .fight-columns{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+  }
+  @media (max-width:640px){
+    .fight-columns{ grid-template-columns:1fr; }
+    .fight-teams-wrap{ flex-direction:column; }
+    .fight-vs-divider{ padding-top:0; }
+    .team-b-label{ text-align:left; }
+  }
+  .fight-team-col{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:16px;
+  }
+  .fight-team-col.winner{ border-color:var(--gold); }
+  .fight-team-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--text-faint);
+    margin-bottom:10px;
+  }
+  .fight-hero-row{
+    display:grid;
+    grid-template-columns:96px 1fr 52px;
+    align-items:center;
+    gap:10px;
+    padding:6px 0;
+  }
+  .fight-hero-name{
+    font-family:'Rajdhani',sans-serif;
+    font-weight:700;
+    font-size:14px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .fight-hero-bar-track{
+    position:relative;
+    height:6px;
+    background:var(--border-soft);
+    border-radius:3px;
+    overflow:hidden;
+  }
+  .fight-hero-bar-fill{
+    position:absolute;
+    top:0; bottom:0; left:0;
+    border-radius:3px;
+    background:var(--fog);
+  }
+  .fight-hero-bar-fill.pos{ background:var(--jade); }
+  .fight-hero-bar-fill.neg{ background:var(--crimson); }
+  .fight-hero-score{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    font-weight:700;
+    text-align:right;
+  }
+
   /* ---------- narrative summaries ---------- */
   .quick-take{
     background:var(--bg-panel-2);
@@ -760,6 +978,13 @@
     </div>
   </header>
 
+  <nav class="page-tabs" role="tablist" aria-label="App section">
+    <button id="tabDraft" class="page-tab active" role="tab">Counter Draft</button>
+    <button id="tabFight" class="page-tab" role="tab">Team Fight</button>
+  </nav>
+
+  <div id="page-draft" class="page">
+
   <p class="board-label">Enemy draft — each slot has a suggested lane, tap to search (any hero can still fill it)</p>
   <div class="slots" id="slots"></div>
 
@@ -773,6 +998,33 @@
   <div id="resultsArea">
     <div class="empty-state">Fill at least one enemy slot above.<br><strong>Top 5 overall</strong> plus <strong>top 5 per lane</strong> (30 heroes total) will rank here.</div>
   </div>
+
+  </div><!-- /page-draft -->
+
+  <div id="page-fight" class="page" style="display:none">
+
+    <div class="fight-teams-wrap">
+      <div class="fight-team-block">
+        <p class="board-label team-a-label">Team A</p>
+        <div class="slots" id="teamASlots"></div>
+      </div>
+      <div class="fight-vs-divider">VS</div>
+      <div class="fight-team-block">
+        <p class="board-label team-b-label">Team B</p>
+        <div class="slots" id="teamBSlots"></div>
+      </div>
+    </div>
+
+    <div class="fight-actions">
+      <button id="fightBtn" class="fight-btn">⚔ Fight ⚔</button>
+      <button id="clearFightBtn" class="fight-clear-btn">Clear teams</button>
+    </div>
+
+    <div id="fightResults">
+      <div class="empty-state">Pick heroes for each side (up to 5), then hit <strong>Fight</strong> to see who comes out on top based on aggregate counter scores.</div>
+    </div>
+
+  </div><!-- /page-fight -->
 
   <div id="finalModal" class="modal-overlay" style="display:none" onclick="closeFinal(event)">
     <div class="modal-panel" onclick="event.stopPropagation()">
@@ -909,6 +1161,8 @@ async function loadData(){
 
     renderSlots();
     renderResults();
+    renderTeamSlots("A");
+    renderTeamSlots("B");
   } catch(err){
     console.error(err);
     statusEl.textContent = "Couldn't load data: " + (err.message || err);
@@ -1022,8 +1276,229 @@ function renderSearchList(i, query){
 }
 
 document.addEventListener("click", (e) => {
-  if (!e.target.closest(".slot")) closeSearch();
+  if (!e.target.closest(".slot")) { closeSearch(); closeTeamSearch(); }
 });
+
+// ------------------------------------------------------------
+// page tabs (Counter Draft <-> Team Fight)
+// ------------------------------------------------------------
+document.getElementById("tabDraft").addEventListener("click", ()=> switchPage("draft"));
+document.getElementById("tabFight").addEventListener("click", ()=> switchPage("fight"));
+function switchPage(page){
+  document.getElementById("page-draft").style.display = page === "draft" ? "" : "none";
+  document.getElementById("page-fight").style.display = page === "fight" ? "" : "none";
+  document.getElementById("tabDraft").classList.toggle("active", page === "draft");
+  document.getElementById("tabFight").classList.toggle("active", page === "fight");
+  closeSearch(); closeTeamSearch();
+}
+
+// ------------------------------------------------------------
+// team fight
+// ------------------------------------------------------------
+let teamA = [null,null,null,null,null];
+let teamB = [null,null,null,null,null];
+let activeFightSlot = null; // { team:"A"|"B", index }
+
+function renderTeamSlots(team){
+  const arr = team === "A" ? teamA : teamB;
+  const el = document.getElementById(team === "A" ? "teamASlots" : "teamBSlots");
+  if (!el) return;
+  el.innerHTML = "";
+  arr.forEach((name, i) => {
+    const slotDiv = document.createElement("div");
+    slotDiv.className = "slot";
+
+    if (name){
+      const h = heroInfo(name) || {};
+      const col = roleColor(h.role);
+      slotDiv.innerHTML = `
+        <div class="hex filled" style="--role-col:${col}">
+          <span class="hex-slotnum">${team}${i+1}</span>
+          <div class="hex-name">${escapeHtml(name)}</div>
+          <div class="hex-role" style="--role-col:${col}">${escapeHtml(h.role || "")}</div>
+          <button class="hex-clear" data-clear="${i}">clear</button>
+        </div>`;
+      slotDiv.querySelector(".hex-clear").addEventListener("click", (e)=>{
+        e.stopPropagation();
+        arr[i] = null;
+        renderTeamSlots(team);
+      });
+    } else {
+      slotDiv.innerHTML = `
+        <div class="hex" data-open="${i}">
+          <span class="hex-slotnum">${team}${i+1}</span>
+          <div class="hex-plus">+</div>
+          <div class="hex-empty-label">Pick Hero</div>
+        </div>
+        <div class="search-pop" id="pop-fight-${team}-${i}">
+          <input type="text" placeholder="Search hero…" autocomplete="off">
+          <div class="search-list"></div>
+        </div>`;
+      slotDiv.querySelector(".hex").addEventListener("click", ()=> openTeamSearch(team, i));
+    }
+    el.appendChild(slotDiv);
+  });
+
+  if (activeFightSlot && activeFightSlot.team === team && arr[activeFightSlot.index] === null){
+    openTeamSearch(team, activeFightSlot.index);
+  }
+}
+
+function openTeamSearch(team, i){
+  document.querySelectorAll(".search-pop.open").forEach(p => p.classList.remove("open"));
+  activeFightSlot = { team, index: i };
+  const pop = document.getElementById(`pop-fight-${team}-${i}`);
+  if (!pop) return;
+  pop.classList.add("open");
+  const input = pop.querySelector("input");
+  input.value = "";
+  renderTeamSearchList(team, i, "");
+  setTimeout(()=> input.focus(), 0);
+
+  input.oninput = () => renderTeamSearchList(team, i, input.value);
+  input.onkeydown = (e) => { if (e.key === "Escape") closeTeamSearch(); };
+}
+
+function closeTeamSearch(){
+  document.querySelectorAll(".search-pop.open").forEach(p => p.classList.remove("open"));
+  activeFightSlot = null;
+}
+
+function renderTeamSearchList(team, i, query){
+  const pop = document.getElementById(`pop-fight-${team}-${i}`);
+  if (!pop) return;
+  const list = pop.querySelector(".search-list");
+  const q = query.trim().toLowerCase();
+  const taken = new Set([...teamA, ...teamB].filter(Boolean));
+  let matches = heroes.filter(h => !taken.has(h.name));
+  if (q) matches = matches.filter(h => h.name.toLowerCase().includes(q));
+  matches = matches.slice(0, 8);
+
+  if (matches.length === 0){
+    list.innerHTML = `<div class="search-empty">No hero matches "${escapeHtml(query)}"</div>`;
+    return;
+  }
+  list.innerHTML = matches.map(h => `
+    <div class="search-item" data-pick="${escapeHtml(h.name)}" style="--r-col:${roleColor(h.role)}">
+      <span>${escapeHtml(h.name)}</span>
+      <span class="role-chip">${escapeHtml(h.role || "")}</span>
+    </div>
+  `).join("");
+  list.querySelectorAll("[data-pick]").forEach(elm => {
+    elm.addEventListener("click", () => {
+      const arr = team === "A" ? teamA : teamB;
+      arr[i] = elm.getAttribute("data-pick");
+      closeTeamSearch();
+      renderTeamSlots(team);
+    });
+  });
+}
+
+document.getElementById("clearFightBtn").addEventListener("click", () => {
+  teamA = [null,null,null,null,null];
+  teamB = [null,null,null,null,null];
+  renderTeamSlots("A");
+  renderTeamSlots("B");
+  document.getElementById("fightResults").innerHTML =
+    `<div class="empty-state">Pick heroes for each side (up to 5), then hit <strong>Fight</strong> to see who comes out on top based on aggregate counter scores.</div>`;
+});
+
+document.getElementById("fightBtn").addEventListener("click", runFight);
+
+function fightVerdict(diff){
+  const d = Math.abs(diff);
+  if (d < 5)  return "Extremely close fight";
+  if (d < 15) return "Slight edge";
+  if (d < 30) return "Clear advantage";
+  return "Dominant favorite";
+}
+
+function fightHeroRow(x){
+  const h = heroInfo(x.name) || {};
+  const col = roleColor(h.role);
+  const pct = Math.max(2, Math.min(100, Math.abs(x.total) / BAR_SCALE * 100));
+  const cls = scoreClass(x.total);
+  return `<div class="fight-hero-row">
+      <span class="fight-hero-name" style="color:${col}">${escapeHtml(x.name)}</span>
+      <div class="fight-hero-bar-track"><div class="fight-hero-bar-fill ${cls}" style="width:${pct}%"></div></div>
+      <span class="fight-hero-score ${cls}">${x.total > 0 ? "+" : ""}${x.total.toFixed(1)}</span>
+    </div>`;
+}
+
+function fightRosterHTML(list, label, isWinner){
+  return `<div class="fight-team-col ${isWinner ? "winner" : ""}">
+      <div class="fight-team-label">${escapeHtml(label)}${isWinner ? " · MVP side" : ""}</div>
+      ${list.map(fightHeroRow).join("")}
+    </div>`;
+}
+
+function buildFightHTML(totalA, totalB, aBreak, bBreak){
+  const diff = totalA - totalB;
+  const winner = diff > 0.001 ? "A" : (diff < -0.001 ? "B" : "tie");
+  const verdict = winner === "tie" ? "Dead even" : fightVerdict(diff);
+  const winnerLabel = winner === "A" ? "Team A" : winner === "B" ? "Team B" : "Draw";
+
+  // deciding matchup: biggest single-pair swing across both directions
+  let decidingLine = "";
+  const allPairs = [];
+  aBreak.forEach(x => x.vs.forEach(v => allPairs.push({ attacker: x.name, defender: v.defender, score: v.score })));
+  bBreak.forEach(x => x.vs.forEach(v => allPairs.push({ attacker: x.name, defender: v.defender, score: v.score })));
+  allPairs.sort((p,q) => Math.abs(q.score) - Math.abs(p.score));
+  if (allPairs.length && Math.abs(allPairs[0].score) > 0.01){
+    const p = allPairs[0];
+    decidingLine = `Biggest single swing: <strong>${escapeHtml(p.attacker)}</strong> vs <strong>${escapeHtml(p.defender)}</strong> (${p.score > 0 ? "+" : ""}${p.score.toFixed(1)}).`;
+  }
+
+  const maxAbs = Math.max(Math.abs(totalA), Math.abs(totalB), 1);
+  let aPct = 50 + ((totalA - totalB) / (2 * maxAbs)) * 50;
+  aPct = Math.max(6, Math.min(94, aPct));
+
+  return `
+    <div class="fight-verdict ${winner === "A" ? "a-win" : winner === "B" ? "b-win" : ""}">
+      <div class="fight-verdict-title">${winner === "tie" ? "Perfectly Even Fight" : `${winnerLabel} Wins`}</div>
+      <div class="fight-verdict-sub">${verdict} · ${diff > 0 ? "+" : ""}${diff.toFixed(1)} score gap</div>
+      <div class="fight-tug-track">
+        <div class="fight-tug-fill" style="width:${aPct}%"></div>
+        <div class="fight-tug-mid"></div>
+      </div>
+      <div class="fight-tug-labels">
+        <span>Team A · ${totalA > 0 ? "+" : ""}${totalA.toFixed(1)}</span>
+        <span>Team B · ${totalB > 0 ? "+" : ""}${totalB.toFixed(1)}</span>
+      </div>
+      ${decidingLine ? `<div class="fight-deciding">${decidingLine}</div>` : ""}
+    </div>
+    <div class="fight-columns">
+      ${fightRosterHTML(aBreak, "Team A", winner === "A")}
+      ${fightRosterHTML(bBreak, "Team B", winner === "B")}
+    </div>`;
+}
+
+function runFight(){
+  const a = teamA.filter(Boolean);
+  const b = teamB.filter(Boolean);
+  const fightResultsEl = document.getElementById("fightResults");
+
+  if (a.length === 0 || b.length === 0){
+    fightResultsEl.innerHTML = `<div class="empty-state">Add at least one hero to <strong>each</strong> side before fighting.</div>`;
+    return;
+  }
+
+  // Each hero's contribution = sum of its attacker-scores vs every hero on the opposing side.
+  const aBreak = a.map(name => {
+    const vs = b.map(def => ({ defender: def, score: getScore(name, def) }));
+    return { name, total: vs.reduce((s,x)=>s+x.score,0), vs };
+  }).sort((x,y) => y.total - x.total);
+
+  const bBreak = b.map(name => {
+    const vs = a.map(def => ({ defender: def, score: getScore(name, def) }));
+    return { name, total: vs.reduce((s,x)=>s+x.score,0), vs };
+  }).sort((x,y) => y.total - x.total);
+
+  const totalA = aBreak.reduce((s,x)=>s+x.total,0);
+  const totalB = bBreak.reduce((s,x)=>s+x.total,0);
+
+  fightResultsEl.innerHTML = buildFightHTML(totalA, totalB, aBreak, bBreak);
+}
 
 // ------------------------------------------------------------
 // mode toggle
