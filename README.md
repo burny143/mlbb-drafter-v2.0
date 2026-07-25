@@ -37,6 +37,15 @@ A counter-pick recommendation engine for **Mobile Legends: Bang Bang**. It migra
 - **Final Line-up modal** — one-click team summary with one hero per lane, role-prioritized selection (Jungle→Assassin, Roam→Tank/Support, etc.), no duplicate heroes, and per-enemy reason breakdowns
 - **Lane labels** — picked heroes show their lane(s) in bold accent color on the slot
 - **Quick-take summary** — top overall counter displayed with a natural-language explanation of why it fits
+- **Ban Priority** — shows the 5 most threatening unpicked heroes (high counter score + low vulnerability = ban target)
+- **Ban Phase** — toggleable ban slots remove heroes entirely from the candidate pool, pick search, and ban priority
+- **Pick Urgency** — result cards show "Pick Early" (high vulnerability, must grab now) or "Flexible" (can delay) labels
+- **Score Spread** — per-candidate min→max breakdown range to distinguish reliable from feast-or-famine picks
+- **Team Fight Analysis** — six-section AI-like breakdown (overview, composition, matchup scoreboard, key counter interactions, impact ratings, deciding factors) with composition warnings (3× same role, no tank, mono damage, no roamer)
+- **Role Advantage** — fight analysis uses the 6×6 role matchup matrix to compute which team has class-based advantages
+- **Teamfight Potential** — per-hero teamfight contribution rating (-2 pure split-push to +2 wombo combo) summed per team and displayed
+- **Composition Score** — combined metric (role diversity, tank/roamer presence, damage type variety, teamfight contribution) shown in fight analysis and Final Line-up modal
+- **Synergy Combos** — 38 known hero synergies (Johnson+Odette, Faramis+Pharsa, etc.) shown in the Final Line-up modal with total team synergy score
 - **Manual overrides** — force specific scores for any attacker→defender pair, bypassing the formula
 - **Hard counter rules** — 102 special-case rules (Tag, Hero, Role, DamageType, Resource conditions) with notes; case-insensitive matching
 - **CI/CD** — two GitHub Actions workflows auto-run migration and score recomputation on push
@@ -235,16 +244,17 @@ Heroes with innate anti-heal counter sustain/healing-tagged opponents.
 
 ## Database Schema
 
-Seven tables defined in `schema.sql`:
+Eight tables defined in `schema.sql`:
 
 | Table | Purpose | Key |
 |---|---|---|
-| `heroes` | Per-hero base stats, roles, tags, lanes, damage type, power spike, anti-heal flag, true-damage flag | `id` (PK), `name` (UNIQUE) |
+| `heroes` | Per-hero base stats, roles, tags, lanes, damage type, power spike, anti-heal flag, true-damage flag, teamfight contribution rating | `id` (PK), `name` (UNIQUE) |
 | `global_weights` | Tunable formula coefficients (10 rows) | `coefficient` (PK) |
 | `role_matrix` | 6×6 role matchup grid | `(attacker_role, defender_role)` (PK) |
 | `style_matrix` | 22×22 style/tag interaction grid | `(attacker_tag, defender_tag)` (PK) |
 | `hard_counter_rules` | Special-case counter rule triggers with notes | `id` (serial PK), unique index on `(attacker, condition_type, condition_value)` |
 | `manual_overrides` | Forced exact scores for specific pairs | `(attacker, defender)` (PK) |
+| `synergy_scores` | Hero pair synergy bonuses for team composition | `(hero_a, hero_b)` (PK) |
 | `counter_scores` | Precomputed per-pair scores with component breakdown and matched rule explanations | `(attacker, defender)` (PK) |
 
 `counter_scores` includes:
@@ -269,12 +279,32 @@ Seven tables defined in `schema.sql`:
    - Each card shows hero name, role(s), lane, aggregate score
    - Per-enemy breakdown with horizontal bar + matched rule explanations
 7. **Mode toggle** switches between **Sum** (add all matchup scores) and **Average** (divide by number of enemy picks)
-8. **Final Line-up button** opens a modal with one hero per lane:
-   - Role-prioritized selection (Jungle→Assassin, Roam→Tank/Support, etc.)
-   - No duplicate heroes
-   - Per-enemy explanation bullets with score contributions
-   - Role coverage indicator + overall summary
-   - Close and Reselect buttons
+8. **Ban Priority** — below the results, a row shows the 5 most threatening heroes if left unpicked (threat = how well they counter your current enemies minus how easily they get countered by remaining heroes). Turn red at high threat (>2), gold at medium (>0.5).
+9. **Ban Phase** — click "+ Ban Phase" to reveal 5 ban slots. Banned heroes are removed entirely from the pool, results, and search. Useful for simulating the ban phase of a draft.
+10. **Pick Urgency** — result cards show "Pick Early" (red badge, high vulnerability to counter-picks — grab this hero now) or "Flexible" (green badge, low vulnerability — can delay without risk).
+11. **Score Spread** — result cards show the min→max range of breakdown scores, indicating consistency vs. variance.
+12. **Final Line-up button** opens a modal with one hero per lane:
+    - Role-prioritized selection (Jungle→Assassin, Roam→Tank/Support, etc.)
+    - No duplicate heroes
+    - Per-enemy explanation bullets with score contributions
+    - Role coverage indicator + overall summary including composition score and teamfight potential
+    - **Team Synergy section** — lists known combo bonuses between the 5 picks with a total synergy score
+    - Close and Reselect buttons
+
+### Team Fight Page
+
+The second tab provides a full team-vs-team analysis:
+
+1. **5 slots per team** — pick up to 5 heroes for Team A and Team B
+2. **Fight button** — runs the analysis using counter scores + role matrix + teamfight contribution
+3. **Composition comparison** — per-team role breakdown, damage mix, power spike timing, anti-heal/mobility indicators, and warnings (3× same role, no tank, mono damage, no roamer)
+4. **Role Advantage bar** — 6×6 role matrix determines which team has class-based advantage
+5. **Teamfight Potential bar** — summed teamfight_contribution values per team
+6. **Composition Score** — combined metric (role diversity + tank/roamer + damage mix + teamfight contribution)
+7. **Matchup Scoreboard** — side-by-side per-position score comparison
+8. **Key Counter Interactions** — top matched hard-counter rules highlighted
+9. **Impact Ratings** — MVP and weak-link cards per team
+10. **Deciding Factors** — natural-language narrative explaining the matchup, margin, carry/drag dynamics, and role/teamfight context
 
 The frontend is **read-only** — it uses the public anon key with no write access.
 
@@ -335,7 +365,7 @@ Never commit secrets. Export them locally or use a `.env` file. In CI, set as Gi
 
 ## Running the Migration
 
-Migrates the workbook into Supabase reference tables (`heroes`, `global_weights`, `role_matrix`, `style_matrix`, `hard_counter_rules`, `manual_overrides`).
+Migrates the workbook into Supabase reference tables (`heroes`, `global_weights`, `role_matrix`, `style_matrix`, `hard_counter_rules`, `manual_overrides`, `synergy_scores`).
 
 ```bash
 export SUPABASE_URL="https://xxxx.supabase.co"
@@ -344,11 +374,15 @@ python migrate_to_supabase.py mobile_legends_heroes_updated.xlsx
 ```
 
 The script:
-1. Extracts **heroes** from the `Heroes` sheet
+1. Extracts **heroes** from the `Heroes` sheet (including `teamfight_contribution`)
 2. Extracts **weights, matrices, rules, overrides** from `Data-Input` sheet at documented row ranges
-3. **Upserts** into `heroes`, `global_weights`, `role_matrix`, `style_matrix`, `manual_overrides`
-4. **Upserts** into `hard_counter_rules` — uses a unique index on `(attacker, condition_type, condition_value)` so re-running safely updates existing rules without creating duplicates; duplicate rows in the workbook are merged (bonus/penalty summed)
-5. Prints row counts and validates hero count is exactly 133
+3. Extracts **synergy pairs** from the `Synergy` sheet
+4. **Upserts** into `heroes`, `global_weights`, `role_matrix`, `style_matrix`, `manual_overrides`
+5. **Upserts** into `hard_counter_rules` — uses a unique index on `(attacker, condition_type, condition_value)` so re-running safely updates existing rules without creating duplicates; duplicate rows in the workbook are merged (bonus/penalty summed)
+6. **Upserts** into `synergy_scores`
+7. Prints row counts and validates hero count is exactly 133
+
+Missing columns/tables are handled gracefully — if a column doesn't exist in the DB yet, the script strips it from the upsert data and continues. Run `schema.sql` in the Supabase SQL Editor to create any missing objects, then re-run the migration to populate them.
 
 ---
 
