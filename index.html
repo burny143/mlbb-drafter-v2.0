@@ -1472,8 +1472,10 @@ function renderSearchList(i, query){
   if (!list) return;
   const q = query.trim().toLowerCase();
   const taken = new Set(slots.filter(Boolean));
+  const lane = LANES[i] || "";
   let matches = heroes.filter(h => !taken.has(h.name));
   if (q) matches = matches.filter(h => h.name.toLowerCase().includes(q));
+  matches.sort((a, b) => (laneRelevance(b, lane) - laneRelevance(a, lane)) || a.name.localeCompare(b.name));
   matches = matches.slice(0, 8);
 
   if (matches.length === 0){
@@ -1593,8 +1595,10 @@ function renderTeamSearchList(team, i, query){
   const list = pop.querySelector(".search-list");
   const q = query.trim().toLowerCase();
   const taken = new Set([...teamA, ...teamB].filter(Boolean));
+  const lane = LANES[i] || "";
   let matches = heroes.filter(h => !taken.has(h.name));
   if (q) matches = matches.filter(h => h.name.toLowerCase().includes(q));
+  matches.sort((a, b) => (laneRelevance(b, lane) - laneRelevance(a, lane)) || a.name.localeCompare(b.name));
   matches = matches.slice(0, 8);
 
   if (matches.length === 0){
@@ -2248,6 +2252,16 @@ function preferredRolesForLane(lane){
   if (l.includes("gold")) return ["Marksman"];
   if (l.includes("roam")) return ["Tank", "Support"];
   return [];
+}
+
+function laneRelevance(hero, lane){
+  if (!lane) return 0;
+  const prefs = preferredRolesForLane(lane);
+  let score = 0;
+  if (prefs.includes(hero.role)) score += 3;
+  if (hero.role2 && prefs.includes(hero.role2)) score += 2;
+  if (hero.lane1 === lane || hero.lane2 === lane) score += 1;
+  return score;
 }
 
 function computeFinalLineup(){
