@@ -416,6 +416,7 @@
   }
   .final-reason b{ font-weight:600; color:var(--text); }
   .final-reason .vs{ color:var(--text-faint); }
+  .final-reason-score{ font-family:'JetBrains Mono',monospace; font-weight:600; font-size:11px; }
   .final-role-note{
     font-size:9.5px;
     color:var(--gold-dim);
@@ -1450,7 +1451,7 @@
   <div class="status-bar" id="status">connecting…</div>
 
   <footer>
-    <span>133 heroes · counter_scores (read-only)</span>
+    <span id="heroStatic">heroes · counter_scores (read-only)</span>
     <span id="rowCount">—</span>
   </footer>
 
@@ -1526,11 +1527,12 @@ async function loadData(){
     statusEl.textContent = "loading heroes…";
     const { data: heroRows, error: heroErr } = await client
       .from("heroes")
-      .select("name, role, role2, lane1, lane2, damage_type, style1, style2, has_antiheal, spike_order")
+      .select("name, role, role2, lane1, lane2, damage_type, style1, style2, has_antiheal, spike_order, teamfight_contribution")
       .order("name");
     if (heroErr) throw heroErr;
     heroes = heroRows;
     heroNames = heroes.map(h => h.name);
+    document.getElementById("heroStatic").textContent = heroes.length + " heroes · counter_scores (read-only)";
     LANES = computeLanes();
     if (activeLaneTab === null) activeLaneTab = LANES[0] || null;
 
@@ -1568,7 +1570,10 @@ async function loadData(){
     const { data: synergyRows, error: synergyErr } = await client
       .from("synergy_scores")
       .select("hero_a, hero_b, synergy");
-    if (!synergyErr && synergyRows) {
+    if (synergyErr) {
+      console.warn("synergy_scores query failed:", synergyErr);
+      statusEl.textContent = "warning: synergy data unavailable";
+    } else if (synergyRows) {
       for (const r of synergyRows) {
         synergyMap.set(r.hero_a + "|" + r.hero_b, r.synergy);
         synergyMap.set(r.hero_b + "|" + r.hero_a, r.synergy); // bidirectional lookup
@@ -1580,7 +1585,10 @@ async function loadData(){
     const { data: rmRows, error: rmErr } = await client
       .from("role_matrix")
       .select("attacker_role, defender_role, points");
-    if (!rmErr && rmRows) {
+    if (rmErr) {
+      console.warn("role_matrix query failed:", rmErr);
+      statusEl.textContent = "warning: role matrix unavailable";
+    } else if (rmRows) {
       for (const r of rmRows) {
         roleMatrix.set(r.attacker_role + "|" + r.defender_role, r.points);
       }
@@ -1631,6 +1639,7 @@ function renderSlots(){
       slotDiv.querySelector(".hex-clear").addEventListener("click", (e)=>{
         e.stopPropagation();
         slots[i] = null;
+        closeSearch(); // prevent stale activeSearchSlot from reopening a different slot
         renderSlots();
         renderResults();
       });
@@ -1757,6 +1766,7 @@ function renderTeamSlots(team){
       slotDiv.querySelector(".hex-clear").addEventListener("click", (e)=>{
         e.stopPropagation();
         arr[i] = null;
+        closeTeamSearch(); // prevent stale activeFightSlot from reopening a different slot
         renderTeamSlots(team);
       });
     } else {
@@ -2249,7 +2259,9 @@ function buildFightAnalysis(teamA, teamB, aBreak, bBreak, totalA, totalB){
       </div>
 
       <div class="fa-summary">
-        <strong>Team ${escapeHtml(winner)}</strong> fields ${aNames.length === 5 ? "a full" : "a"} ${escapeHtml(fa_damageMix(aNames).mixed ? "mixed-damage" : "focused")} lineup against a ${escapeHtml(fa_damageMix(bNames).mixed ? "mixed" : "focused")} opposition. ${fa_decidingFactor(totalA, totalB, aBreak, bBreak, winner, aNames, bNames)}
+        ${winner === "tie"
+          ? `<strong>Both teams</strong> field`
+          : `<strong>Team ${escapeHtml(winner)}</strong> fields`} ${aNames.length === 5 ? "a full" : "a"} ${escapeHtml(fa_damageMix(aNames).mixed ? "mixed-damage" : "focused")} lineup against a ${escapeHtml(fa_damageMix(bNames).mixed ? "mixed" : "focused")} opposition. ${winner === "tie" ? "Neither side holds a decisive counter edge." : ""}
       </div>
 
       ${fa_compSectionHTML(aNames, bNames)}
@@ -2365,7 +2377,7 @@ const BAR_SCALE = 120; // score magnitude that fills half the bar track
 
 function getScore(attacker, defender){
   const v = scoreMap.get(attacker + "|" + defender);
-  return v ? v.score : 0;
+  return typeof v?.score === "number" ? v.score : 0;
 }
 function getMatchedRules(attacker, defender){
   const v = scoreMap.get(attacker + "|" + defender);
@@ -2397,6 +2409,9 @@ function computeThreat(candidate, enemies, remaining){
 /**
  * computeRoleAdvantage: Sum role_matrix points for every A→B and B→A matchup,
  * then return the net advantage for each team.
+ * NOTE: Only uses primary role (not role2) — this is a coarse compositional
+ * comparison for fight analysis, intentionally simpler than the pre-computed
+ * counter score formula which does consider role2 for individual matchups.
  */
 function computeRoleAdvantage(aNames, bNames){
   let advA = 0, advB = 0;
@@ -2778,6 +2793,36 @@ function computeFinalLineup(){
       picks.push({ lane, hero: pick });
     }
   }
+
+  // Refinement: hill-climb swaps to improve team composition
+  if (picks.length >= 3) {
+    const names = picks.map(p => p.hero.name);
+    let bestScore = teamCompositionScore(names);
+    for (let pass = 0; pass < 3; pass++) {
+      let swapped = false;
+      for (let i = 0; i < picks.length; i++) {
+        const candidates = lastResults.byLane[picks[i].lane];
+        for (const alt of candidates) {
+          if (alt.name === picks[i].hero.name) continue;
+          if (used.has(alt.name)) continue;
+          const trial = [...names];
+          trial[i] = alt.name;
+          const trialScore = teamCompositionScore(trial);
+          if (trialScore > bestScore) {
+            used.delete(picks[i].hero.name);
+            used.add(alt.name);
+            picks[i].hero = alt;
+            names[i] = alt.name;
+            bestScore = trialScore;
+            swapped = true;
+            break;
+          }
+        }
+      }
+      if (!swapped) break;
+    }
+  }
+
   return picks;
 }
 
@@ -2798,27 +2843,30 @@ function openFinal(){
     const prefs = preferredRolesForLane(lane);
     const roleMatch = prefs.includes(h.role) || prefs.includes(h.role2);
     const roleNote = roleMatch ? "" : `<div class="final-role-note">(role preference: ${prefs.join(" / ")})</div>`;
-    const reasons = r.breakdown
-      .filter(b => b.matched_rules && b.matched_rules.length > 0)
-      .flatMap(b => b.matched_rules.map(rule => {
-        const val = escapeHtml(rule.value);
-        const note = escapeHtml(rule.note);
-        const net = (rule.bonus || 0) - (rule.penalty || 0);
-        const sign = net >= 0 ? "+" : "";
-        let tpl = "";
-        switch(rule.type){
-          case "Hero":    tpl = `Direct counter to <b>${val}</b>`; break;
-          case "Tag":     tpl = `Strong against <b>${val}</b> heroes`; break;
-          case "Role":    tpl = `Effective against <b>${val}</b> role`; break;
-          case "DamageType": tpl = `Exploits <b>${val}</b> damage type`; break;
-          case "Resource":   tpl = `Pressures <b>${val}</b>-dependent heroes`; break;
-          default: tpl = note;
-        }
-        return `<div class="final-reason"><span class="vs">vs ${escapeHtml(b.enemy)}</span> — ${tpl} <span class="vs">(${sign}${net})</span></div>`;
-      }));
-    if (reasons.length === 0){
-      reasons.push(`<div class="final-reason"><span class="vs">Recommended for ${escapeHtml(lane)} based on scores.</span></div>`);
-    }
+    const reasons = r.breakdown.map(b => {
+      const scoreStr = `${b.score > 0 ? "+" : ""}${b.score.toFixed(1)}`;
+      const cls = scoreClass(b.score);
+      if (b.matched_rules && b.matched_rules.length > 0) {
+        const ruleParts = b.matched_rules.map(rule => {
+          const val = escapeHtml(rule.value);
+          const note = escapeHtml(rule.note);
+          const net = (rule.bonus || 0) - (rule.penalty || 0);
+          const sign = net >= 0 ? "+" : "";
+          let tpl = "";
+          switch(rule.type){
+            case "Hero":    tpl = `Direct counter to <b>${val}</b>`; break;
+            case "Tag":     tpl = `Strong against <b>${val}</b> heroes`; break;
+            case "Role":    tpl = `Effective against <b>${val}</b> role`; break;
+            case "DamageType": tpl = `Exploits <b>${val}</b> damage type`; break;
+            case "Resource":   tpl = `Pressures <b>${val}</b>-dependent heroes`; break;
+            default: tpl = note;
+          }
+          return `${tpl} (${sign}${net})`;
+        });
+        return `<div class="final-reason"><span class="vs">vs ${escapeHtml(b.enemy)}</span> <span class="final-reason-score ${cls}">${scoreStr}</span> — ${ruleParts.join(" + ")}</div>`;
+      }
+      return `<div class="final-reason"><span class="vs">vs ${escapeHtml(b.enemy)}</span> <span class="final-reason-score ${cls}">${scoreStr}</span> — stat &amp; timing advantage</div>`;
+    });
     return `
       <div class="final-card">
         <div class="final-card-lane">${escapeHtml(lane)}</div>
@@ -2941,6 +2989,7 @@ function openBanSearch(i){
   renderBanSearchList(i, "");
   setTimeout(()=> input.focus(), 0);
   input.oninput = () => renderBanSearchList(i, input.value);
+  input.onkeydown = (e) => { if (e.key === "Escape") { document.querySelectorAll(".search-pop.open").forEach(p => p.classList.remove("open")); } };
 }
 
 function renderBanSearchList(i, query){
@@ -2955,7 +3004,14 @@ function renderBanSearchList(i, query){
     .filter(n => !filledSet.has(n) && !bannedAlready.has(n) && n.toLowerCase().includes(q))
     .slice(0, 8);
   list.innerHTML = filtered.length
-    ? filtered.map(n => `<div class="search-item" data-name="${escapeHtml(n)}">${escapeHtml(n)}</div>`).join("")
+    ? filtered.map(n => {
+        const h = heroInfo(n) || {};
+        const col = roleColor(h.role);
+        return `<div class="search-item" data-name="${escapeHtml(n)}" style="--r-col:${col}">
+          <span>${escapeHtml(n)}</span>
+          <span class="role-chip">${escapeHtml(h.role || "")}</span>
+        </div>`;
+      }).join("")
     : `<div class="search-item dim">${q ? "No match" : "No heroes left to ban"}</div>`;
   list.querySelectorAll(".search-item").forEach(el => {
     el.addEventListener("click", ()=>{

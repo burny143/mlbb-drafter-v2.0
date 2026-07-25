@@ -7,13 +7,12 @@ hero pair and upserts the results into `counter_scores`.
 
 Formula (mirrors the Excel model's "Documentation - Computations" sheet):
 
-    TOTAL = Role Advantage
-          + Stat
-          + Difficulty Gap
-          + Damage Type Advantage
-          + Power Spike Timing
-          + Style Matchup
-          + Hard Counter Bonus
+TOTAL = Role Advantage
+      + Stat
+      + Damage Type Advantage
+      + Power Spike Timing
+      + Style Matchup
+      + Hard Counter Bonus
 
     ...then TOTAL is replaced entirely by a Manual Override score if one
     exists for that exact (attacker, defender) pair.
@@ -28,11 +27,6 @@ Component definitions:
     Stat (damage + survivability)
         damage_score  = ((atk.offense + atk.ability_effects) / 2 - def.durability) * burst_mult
         surv_score    = (atk.durability - (def.offense + def.ability_effects) / 2) * burst_mult * 0.3
-
-    Difficulty Gap
-        gap = atk.difficulty - def.difficulty
-        sigmoid weight = 1/(1 + e^(-0.15*(gap-10)))
-        gap * weight * diff_mult
 
     Damage Type Advantage
         dmgtype_mixed   if atk.damage_type == "Mixed"
@@ -69,7 +63,6 @@ Usage:
 """
 
 import argparse
-import math
 import os
 import sys
 from pathlib import Path
@@ -156,11 +149,55 @@ def load_reference_data(client: Client) -> dict[str, Any]:
         for r in style_rows
     }
     manual_overrides = {
-        (r["attacker"], r["defender"]): (
+        (r["attacker"].strip(), r["defender"].strip()): (
             float(r["score"]) if r["score"] is not None else None
         )
         for r in override_rows
     }
+
+    # --- Duplicate hero name validation ---------------------------------
+    # counter_scores is keyed by (attacker name, defender name), not by
+    # hero id, and the upsert's on_conflict target is "attacker,defender".
+    # If two heroes share the same name but different ids, they are NOT
+    # skipped as a self-pair (that check is id-based) but their rows WILL
+    # collide and silently overwrite each other during upsert, producing
+    # a row count lower than expected with no error raised. Fail loudly
+    # here instead so it isn't mistaken for the unrelated "hero count
+    # changed" case described in AGENTS.md's troubleshooting section.
+    name_to_ids: dict[str, list] = {}
+    for h in heroes:
+        name_to_ids.setdefault(h["name"], []).append(h["id"])
+    duplicates = {name: ids for name, ids in name_to_ids.items() if len(ids) > 1}
+    if duplicates:
+        details = "; ".join(f"{name!r} (ids: {ids})" for name, ids in duplicates.items())
+        sys.exit(
+            "ERROR: duplicate hero names found in `heroes` table — this will "
+            "cause counter_scores rows to silently collide and overwrite each "
+            f"other. Fix the duplicate name(s) before recomputing: {details}"
+        )
+
+    # --- Pre-group hard counter rules by attacker ------------------------
+    # hard_counter_bonus() is called once per (attacker, defender) pair
+    # (~heroes^2 times). Scanning the full rule list every call is
+    # O(heroes^2 * rules); grouping once here makes each call O(rules
+    # matching this attacker) instead.
+    rules_by_attacker: dict[str, list[dict]] = {}
+    for rule in hard_counter_rules:
+        key = rule["attacker"].strip().lower()
+        rules_by_attacker.setdefault(key, []).append(rule)
+
+    required_weight_keys = {
+        "role_mult", "burst_mult", "dmgtype_mixed", "dmgtype_same",
+        "dmgtype_diff", "spike_mult", "style_mult", "rangetype_mult",
+        "antiheal_mult",
+    }
+    missing_keys = required_weight_keys - weights.keys()
+    if missing_keys:
+        sys.exit(
+            "ERROR: global_weights table is missing required coefficient(s): "
+            f"{sorted(missing_keys)}. Add them to global_weights before running "
+            "this script."
+        )
 
     print(f"  heroes: {len(heroes)}")
     print(f"  global_weights: {len(weights)}")
@@ -175,6 +212,7 @@ def load_reference_data(client: Client) -> dict[str, Any]:
         "role_matrix": role_matrix,
         "style_matrix": style_matrix,
         "hard_counter_rules": hard_counter_rules,
+        "rules_by_attacker": rules_by_attacker,
         "manual_overrides": manual_overrides,
     }
 
@@ -202,12 +240,6 @@ def stat_component(atk: dict, defn: dict, burst_mult: float) -> float:
     return damage_score + surv_score
 
 
-def difficulty_gap(atk: dict, defn: dict, diff_mult: float) -> float:
-    gap = atk["difficulty"] - defn["difficulty"]
-    weight = 1.0 / (1.0 + math.exp(-0.15 * (gap - 10)))
-    return gap * weight * diff_mult
-
-
 def damage_type_advantage(atk: dict, defn: dict, weights: dict) -> float:
     if atk["damage_type"] == "Mixed":
         base = weights["dmgtype_mixed"]
@@ -220,11 +252,20 @@ def damage_type_advantage(atk: dict, defn: dict, weights: dict) -> float:
     return base
 
 
+DEFAULT_SPIKE_ORDER = 3  # "Mid" band fallback for null/missing spike_order
+
 def power_spike_timing(atk: dict, defn: dict, spike_mult: float) -> float:
-    a_band = SPIKE_BANDS.get(atk["spike_order"], "Mid")
-    d_band = SPIKE_BANDS.get(defn["spike_order"], "Mid")
+    # spike_order can be NULL in the heroes table. SPIKE_BANDS.get(..., "Mid")
+    # already tolerates None for the band lookup, but the fine_tune subtraction
+    # below does raw arithmetic on the same field and previously crashed the
+    # whole batch (TypeError: unsupported operand type(s) for -: 'NoneType'
+    # and 'int') the first time it hit a hero with no spike_order set.
+    a_spike = atk["spike_order"] if atk["spike_order"] is not None else DEFAULT_SPIKE_ORDER
+    d_spike = defn["spike_order"] if defn["spike_order"] is not None else DEFAULT_SPIKE_ORDER
+    a_band = SPIKE_BANDS.get(a_spike, "Mid")
+    d_band = SPIKE_BANDS.get(d_spike, "Mid")
     base = SPIKE_MATRIX.get((a_band, d_band), 0)
-    fine_tune = (atk["spike_order"] - defn["spike_order"]) * 0.5
+    fine_tune = (a_spike - d_spike) * 0.5
     return (base + fine_tune) * spike_mult
 
 
@@ -247,33 +288,47 @@ def style_matchup(atk: dict, defn: dict, style_matrix: dict, style_mult: float) 
     return (best * 0.6 + rest_avg * 0.4) * style_mult
 
 
-def hard_counter_bonus(atk: dict, defn: dict, rules: list[dict]) -> tuple[float, list]:
+def _norm(s: Optional[str]) -> str:
+    """Whitespace- and case-insensitive normalization for rule matching."""
+    return (s or "").strip().lower()
+
+
+def hard_counter_bonus(atk: dict, defn: dict, rules_by_attacker: dict[str, list[dict]]) -> tuple[float, list]:
     total = 0.0
     matched_rules = []
-    atk_name_lower = atk["name"].lower()
-    for rule in rules:
-        if rule["attacker"].lower() != atk_name_lower:
-            continue
+    # Pre-grouped by normalized attacker name: O(rules for this attacker)
+    # instead of scanning every rule for every (attacker, defender) pair.
+    candidate_rules = rules_by_attacker.get(_norm(atk["name"]), [])
+    defn_name = _norm(defn["name"])
+    defn_style1 = _norm(defn.get("style1"))
+    defn_style2 = _norm(defn.get("style2"))
+    defn_role = _norm(defn.get("role"))
+    defn_role2 = _norm(defn.get("role2"))
+    defn_damage_type = _norm(defn.get("damage_type"))
+    defn_resource = _norm(defn.get("resource"))
+
+    for rule in candidate_rules:
         ctype = rule["condition_type"]
-        cval = rule["condition_value"]
+        cval_raw = rule["condition_value"]
+        cval = _norm(cval_raw)
         matched = False
         if ctype == "Tag":
-            matched = cval.lower() in ((defn.get("style1") or "").lower(), (defn.get("style2") or "").lower())
+            matched = cval in (defn_style1, defn_style2)
         elif ctype == "Hero":
-            matched = defn["name"].lower() == cval.lower()
+            matched = defn_name == cval
         elif ctype == "Role":
-            matched = cval.lower() in ((defn.get("role") or "").lower(), (defn.get("role2") or "").lower())
+            matched = cval in (defn_role, defn_role2)
         elif ctype == "DamageType":
-            matched = (defn["damage_type"] or "").lower() == cval.lower()
+            matched = defn_damage_type == cval
         elif ctype == "Resource":
-            matched = (defn["resource"] or "").lower() == cval.lower()
+            matched = defn_resource == cval
         if matched:
             bonus = float(rule["bonus_to_attacker"])
             penalty = float(rule["penalty_to_defender"])
             total += bonus - penalty
             matched_rules.append({
                 "type": ctype,
-                "value": cval,
+                "value": cval_raw,
                 "bonus": bonus,
                 "penalty": penalty,
                 "note": rule.get("note") or "",
@@ -287,15 +342,14 @@ def compute_score(atk: dict, defn: dict, ref: dict) -> dict:
 
     ra = role_advantage(atk, defn, ref["role_matrix"], weights["role_mult"])
     st = stat_component(atk, defn, weights["burst_mult"])
-    dg = difficulty_gap(atk, defn, weights["diff_mult"])
     dta = damage_type_advantage(atk, defn, weights)
     pst = power_spike_timing(atk, defn, weights["spike_mult"])
     sm = style_matchup(atk, defn, ref["style_matrix"], weights["style_mult"])
-    hcb, matched_rules = hard_counter_bonus(atk, defn, ref["hard_counter_rules"])
+    hcb, matched_rules = hard_counter_bonus(atk, defn, ref["rules_by_attacker"])
     rta = range_type_advantage(atk, defn, weights["rangetype_mult"])
     aha = antiheal_advantage(atk, defn, weights["antiheal_mult"])
 
-    total = ra + st + dg + dta + pst + sm + hcb + rta + aha
+    total = ra + st + dta + pst + sm + hcb + rta + aha
     if override is not None:
         total = override
 
@@ -305,7 +359,7 @@ def compute_score(atk: dict, defn: dict, ref: dict) -> dict:
         "score": total,
         "role_advantage": ra,
         "stat": st,
-        "difficulty_gap": dg,
+        "difficulty_gap": 0.0,
         "damage_type_adv": dta,
         "power_spike_timing": pst,
         "style_matchup": sm,
