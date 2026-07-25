@@ -336,7 +336,7 @@ def upsert_in_chunks(client: Client, table: str, records: list[dict],
                         r.pop(col, None)
                     continue  # retry this chunk
                 # Table itself missing?  Skip silently.
-                if "does not exist" in msg:
+                if "does not exist" in msg or "Could not find the table" in msg:
                     print(f"  {table}: table does not exist — skipping")
                     return total
                 raise
