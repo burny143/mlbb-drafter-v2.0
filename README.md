@@ -41,11 +41,12 @@ A counter-pick recommendation engine for **Mobile Legends: Bang Bang**. It migra
 - **Ban Phase** — toggleable ban slots remove heroes entirely from the candidate pool, pick search, and ban priority
 - **Pick Urgency** — result cards show "Pick Early" (high vulnerability, must grab now) or "Flexible" (can delay) labels
 - **Score Spread** — per-candidate min→max breakdown range to distinguish reliable from feast-or-famine picks
-- **Team Fight Analysis** — six-section AI-like breakdown (overview, composition, matchup scoreboard, key counter interactions, impact ratings, deciding factors) with composition warnings (3× same role, no tank, mono damage, no roamer)
+- **Team Fight Analysis** — six-section AI-like breakdown (overview, composition, matchup scoreboard, key counter interactions, impact ratings, deciding factors) with composition warnings and a **composition penalty** that reduces a team's total score for structural flaws (5× same role, no tank/roamer, no ranged DPS, all same damage type)
 - **Role Advantage** — fight analysis uses the 6×6 role matchup matrix to compute which team has class-based advantages
 - **Teamfight Potential** — per-hero teamfight contribution rating (-2 pure split-push to +2 wombo combo) summed per team and displayed
-- **Composition Score** — combined metric (role diversity, tank/roamer presence, damage type variety, teamfight contribution) shown in fight analysis and Final Line-up modal
-- **Synergy Combos** — 38 known hero synergies (Johnson+Odette, Faramis+Pharsa, etc.) shown in the Final Line-up modal with total team synergy score
+- **Composition Score** — combined metric (role diversity + tank/roamer + damage mix + teamfight contribution) shown in fight analysis and Final Line-up modal
+- **Composition Penalty** — deducted from each team's total score in fight mode; a truly bad comp (5 same role, no tank, no range) costs ~130–160 points and can flip the verdict
+- **Synergy Combos** — 39 known hero synergies shown in both the fight analysis composition blocks and the Final Line-up modal with total team synergy score
 - **Manual overrides** — force specific scores for any attacker→defender pair, bypassing the formula
 - **Hard counter rules** — 102 special-case rules (Tag, Hero, Role, DamageType, Resource conditions) with notes; case-insensitive matching
 - **CI/CD** — two GitHub Actions workflows auto-run migration and score recomputation on push
@@ -298,6 +299,7 @@ The second tab provides a full team-vs-team analysis:
 1. **5 slots per team** — pick up to 5 heroes for Team A and Team B
 2. **Fight button** — runs the analysis using counter scores + role matrix + teamfight contribution
 3. **Composition comparison** — per-team role breakdown, damage mix, power spike timing, anti-heal/mobility indicators, and warnings (3× same role, no tank, mono damage, no roamer)
+4. **Composition penalty** — each team's total score is reduced by structural flaws. Penalties: 5× same role (−90), 4× (−55), 3× (−30); no roamer (−25); no sustained DPS (−20); all same damage type (−12). A truly bad comp can flip the verdict.
 4. **Role Advantage bar** — 6×6 role matrix determines which team has class-based advantage
 5. **Teamfight Potential bar** — summed teamfight_contribution values per team
 6. **Composition Score** — combined metric (role diversity + tank/roamer + damage mix + teamfight contribution)
