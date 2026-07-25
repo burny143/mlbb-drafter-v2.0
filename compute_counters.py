@@ -310,8 +310,6 @@ def compute_score(atk: dict, defn: dict, ref: dict) -> dict:
         "power_spike_timing": pst,
         "style_matchup": sm,
         "hard_counter_bonus": hcb,
-        "range_type_adv": rta,
-        "antiheal_adv": aha,
         "matched_rules": matched_rules,
     }
 
